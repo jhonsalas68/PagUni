@@ -29,12 +29,36 @@ Route::middleware(['web'])->group(function () {
     
     // Rutas del Administrador
     Route::prefix('admin')->name('admin.')->group(function () {
-        Route::get('/dashboard', function () {
-            if (session('user_type') !== 'administrador') {
-                return redirect()->route('login');
-            }
-            return view('admin.dashboard');
-        })->name('dashboard');
+        Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
+        
+        // Gestión de Docentes
+        Route::resource('docentes', \App\Http\Controllers\Admin\DocenteController::class);
+        Route::get('docentes-search', [\App\Http\Controllers\Admin\DocenteController::class, 'search'])->name('docentes.search');
+        Route::patch('docentes/{docente}/activate', [\App\Http\Controllers\Admin\DocenteController::class, 'activate'])->name('docentes.activate');
+        
+        // Gestión de Facultades
+        Route::resource('facultades', \App\Http\Controllers\Admin\FacultadController::class)->parameters(['facultades' => 'facultad']);
+        
+        // Gestión de Carreras
+        Route::resource('carreras', \App\Http\Controllers\Admin\CarreraController::class);
+        
+        // Gestión de Materias
+        Route::resource('materias', \App\Http\Controllers\Admin\MateriaController::class);
+        
+        // Gestión de Grupos
+        Route::resource('grupos', \App\Http\Controllers\Admin\GrupoController::class);
+        
+        // Gestión de Aulas
+        Route::resource('aulas', \App\Http\Controllers\Admin\AulaController::class);
+        
+        // Gestión de Estudiantes
+        Route::resource('estudiantes', \App\Http\Controllers\Admin\EstudianteController::class);
+        
+        // Gestión de Cargas Académicas
+        Route::resource('cargas-academicas', \App\Http\Controllers\Admin\CargaAcademicaController::class)->parameters(['cargas-academicas' => 'cargaAcademica']);
+        
+        // Gestión de Horarios
+        Route::resource('horarios', \App\Http\Controllers\Admin\HorarioController::class);
     });
 
     // Rutas del Profesor

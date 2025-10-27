@@ -81,28 +81,53 @@
                     <ul class="nav flex-column">
                         @if(session('user_type') == 'administrador')
                             <li class="nav-item">
-                                <a class="nav-link active" href="{{ route('admin.dashboard') }}">
+                                <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">
                                     <i class="fas fa-tachometer-alt"></i> Dashboard
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="#">
+                                <a class="nav-link {{ request()->routeIs('admin.docentes.*') ? 'active' : '' }}" href="{{ route('admin.docentes.index') }}">
+                                    <i class="fas fa-chalkboard-teacher"></i> Gestión de Docentes
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.facultades.*') ? 'active' : '' }}" href="{{ route('admin.facultades.index') }}">
                                     <i class="fas fa-building"></i> Facultades
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="#">
+                                <a class="nav-link {{ request()->routeIs('admin.carreras.*') ? 'active' : '' }}" href="{{ route('admin.carreras.index') }}">
                                     <i class="fas fa-graduation-cap"></i> Carreras
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="#">
-                                    <i class="fas fa-chalkboard-teacher"></i> Profesores
+                                <a class="nav-link {{ request()->routeIs('admin.materias.*') ? 'active' : '' }}" href="{{ route('admin.materias.index') }}">
+                                    <i class="fas fa-book"></i> Materias
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="#">
+                                <a class="nav-link {{ request()->routeIs('admin.grupos.*') ? 'active' : '' }}" href="{{ route('admin.grupos.index') }}">
+                                    <i class="fas fa-users"></i> Grupos
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.cargas-academicas.*') ? 'active' : '' }}" href="{{ route('admin.cargas-academicas.index') }}">
+                                    <i class="fas fa-chalkboard-teacher"></i> Cargas Académicas
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.estudiantes.*') ? 'active' : '' }}" href="{{ route('admin.estudiantes.index') }}">
                                     <i class="fas fa-user-graduate"></i> Estudiantes
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.aulas.*') ? 'active' : '' }}" href="{{ route('admin.aulas.index') }}">
+                                    <i class="fas fa-door-closed"></i> Aulas
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.horarios.*') ? 'active' : '' }}" href="{{ route('admin.horarios.index') }}">
+                                    <i class="fas fa-calendar-alt"></i> Horarios
                                 </a>
                             </li>
                         @elseif(session('user_type') == 'profesor')

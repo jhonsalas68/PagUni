@@ -18,6 +18,8 @@ class Materia extends Model
         'creditos',
         'semestre',
         'carrera_id',
+        'horas_teoricas',
+        'horas_practicas',
     ];
 
     public function carrera(): BelongsTo
@@ -28,5 +30,10 @@ class Materia extends Model
     public function inscripciones(): HasMany
     {
         return $this->hasMany(Inscripcion::class);
+    }
+
+    public function grupos(): HasMany
+    {
+        return $this->hasMany(Grupo::class);
     }
 }

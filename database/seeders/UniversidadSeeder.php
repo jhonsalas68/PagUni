@@ -9,6 +9,9 @@ use App\Models\Materia;
 use App\Models\Profesor;
 use App\Models\Estudiante;
 use App\Models\Administrador;
+use App\Models\Aula;
+use App\Models\Grupo;
+use App\Models\CargaAcademica;
 
 class UniversidadSeeder extends Seeder
 {
@@ -152,4 +155,178 @@ class UniversidadSeeder extends Seeder
             'telefono' => '555-8888',
             'password' => 'admin123',
             'nivel_acceso' => 'admin'
+        ]);       
+ // Crear Aulas
+        Aula::create([
+            'codigo_aula' => 'A101',
+            'nombre' => 'Aula Magna A101',
+            'tipo_aula' => 'aula',
+            'edificio' => 'Edificio A',
+            'piso' => 1,
+            'capacidad' => 40,
+            'descripcion' => 'Aula regular para clases teóricas',
+            'equipamiento' => ['pizarra', 'proyector', 'aire_acondicionado'],
+            'estado' => 'disponible',
+            'tiene_aire_acondicionado' => true,
+            'tiene_proyector' => true,
+            'tiene_computadoras' => false,
+            'acceso_discapacitados' => true
         ]);
+
+        Aula::create([
+            'codigo_aula' => 'LAB-B205',
+            'nombre' => 'Laboratorio de Computación',
+            'tipo_aula' => 'laboratorio',
+            'edificio' => 'Edificio B',
+            'piso' => 2,
+            'capacidad' => 25,
+            'descripcion' => 'Laboratorio equipado con 25 computadoras',
+            'equipamiento' => ['computadoras', 'proyector', 'aire_acondicionado', 'red_internet'],
+            'estado' => 'disponible',
+            'tiene_aire_acondicionado' => true,
+            'tiene_proyector' => true,
+            'tiene_computadoras' => true,
+            'acceso_discapacitados' => false
+        ]);
+
+        Aula::create([
+            'codigo_aula' => 'AUD-C301',
+            'nombre' => 'Auditorio Principal',
+            'tipo_aula' => 'auditorio',
+            'edificio' => 'Edificio C',
+            'piso' => 3,
+            'capacidad' => 150,
+            'descripcion' => 'Auditorio para eventos y conferencias',
+            'equipamiento' => ['sistema_audio', 'proyector', 'microfono', 'aire_acondicionado'],
+            'estado' => 'disponible',
+            'tiene_aire_acondicionado' => true,
+            'tiene_proyector' => true,
+            'tiene_computadoras' => false,
+            'acceso_discapacitados' => true
+        ]);
+
+        Aula::create([
+            'codigo_aula' => 'LAB-A102',
+            'nombre' => 'Laboratorio de Física',
+            'tipo_aula' => 'laboratorio',
+            'edificio' => 'Edificio A',
+            'piso' => 1,
+            'capacidad' => 20,
+            'descripcion' => 'Laboratorio para prácticas de física',
+            'equipamiento' => ['equipos_laboratorio', 'mesas_trabajo', 'ventilacion'],
+            'estado' => 'disponible',
+            'tiene_aire_acondicionado' => false,
+            'tiene_proyector' => false,
+            'tiene_computadoras' => false,
+            'acceso_discapacitados' => true
+        ]);
+
+        Aula::create([
+            'codigo_aula' => 'B201',
+            'nombre' => 'Aula B201',
+            'tipo_aula' => 'aula',
+            'edificio' => 'Edificio B',
+            'piso' => 2,
+            'capacidad' => 35,
+            'descripcion' => 'Aula regular con capacidad media',
+            'equipamiento' => ['pizarra', 'ventiladores'],
+            'estado' => 'disponible',
+            'tiene_aire_acondicionado' => false,
+            'tiene_proyector' => false,
+            'tiene_computadoras' => false,
+            'acceso_discapacitados' => false
+        ]);
+
+        Aula::create([
+            'codigo_aula' => 'CONF-C201',
+            'nombre' => 'Sala de Conferencias',
+            'tipo_aula' => 'sala_conferencias',
+            'edificio' => 'Edificio C',
+            'piso' => 2,
+            'capacidad' => 30,
+            'descripcion' => 'Sala para reuniones y conferencias pequeñas',
+            'equipamiento' => ['mesa_conferencia', 'proyector', 'sistema_audio', 'aire_acondicionado'],
+            'estado' => 'disponible',
+            'tiene_aire_acondicionado' => true,
+            'tiene_proyector' => true,
+            'tiene_computadoras' => false,
+            'acceso_discapacitados' => true
+        ]);       
+ // Crear Grupos para las materias
+        $materia1 = Materia::find(1); // Programación I
+        $materia2 = Materia::find(2); // Base de Datos
+        $materia3 = Materia::find(3); // Cálculo Diferencial
+
+        if ($materia1) {
+            Grupo::create([
+                'identificador' => 'A',
+                'materia_id' => $materia1->id,
+                'capacidad_maxima' => 30,
+                'estado' => 'activo'
+            ]);
+
+            Grupo::create([
+                'identificador' => 'B',
+                'materia_id' => $materia1->id,
+                'capacidad_maxima' => 25,
+                'estado' => 'activo'
+            ]);
+        }
+
+        if ($materia2) {
+            Grupo::create([
+                'identificador' => 'A',
+                'materia_id' => $materia2->id,
+                'capacidad_maxima' => 20,
+                'estado' => 'activo'
+            ]);
+        }
+
+        if ($materia3) {
+            Grupo::create([
+                'identificador' => 'A',
+                'materia_id' => $materia3->id,
+                'capacidad_maxima' => 35,
+                'estado' => 'activo'
+            ]);
+        }
+
+        // Crear algunas asignaciones de carga académica
+        $profesor1 = Profesor::find(1);
+        $profesor2 = Profesor::find(2);
+
+        if ($profesor1) {
+            // Profesor 1 tiene Programación I - Grupo A
+            CargaAcademica::create([
+                'profesor_id' => $profesor1->id,
+                'grupo_id' => 1, // Programación I - Grupo A
+                'periodo' => '2024-2',
+                'estado' => 'asignado'
+            ]);
+
+            // Profesor 1 tiene Base de Datos - Grupo A
+            CargaAcademica::create([
+                'profesor_id' => $profesor1->id,
+                'grupo_id' => 3, // Base de Datos - Grupo A
+                'periodo' => '2024-2',
+                'estado' => 'asignado'
+            ]);
+        }
+
+        if ($profesor2) {
+            // Profesor 2 tiene Cálculo Diferencial - Grupo A
+            CargaAcademica::create([
+                'profesor_id' => $profesor2->id,
+                'grupo_id' => 4, // Cálculo Diferencial - Grupo A
+                'periodo' => '2024-2',
+                'estado' => 'asignado'
+            ]);
+
+            // Profesor 2 tiene Programación I - Grupo B
+            CargaAcademica::create([
+                'profesor_id' => $profesor2->id,
+                'grupo_id' => 2, // Programación I - Grupo B
+                'periodo' => '2024-2',
+                'estado' => 'asignado'
+            ]);
+        }

@@ -37,7 +37,7 @@ class AuthController extends Controller
         }
         // Profesor: PROF###
         elseif (preg_match('/^PROF\d+$/', $codigo)) {
-            $user = Profesor::where('codigo_docente', $codigo)->first();
+            $user = Profesor::where('codigo_docente', $codigo)->where('estado', 'activo')->first();
             $userType = 'profesor';
         }
         // Estudiante: formato [CARRERA][AÑO][NUMERO] como ISC2024001, MATE2024001
@@ -48,6 +48,12 @@ class AuthController extends Controller
 
         // Verificar si el usuario existe y la contraseña es correcta
         if ($user && Hash::check($password, $user->password)) {
+            // Verificar estado adicional para profesores
+            if ($userType === 'profesor' && $user->estado !== 'activo') {
+                return back()->withErrors([
+                    'codigo' => 'Su cuenta ha sido desactivada. Contacte al administrador.',
+                ])->withInput();
+            }
             // Guardar información del usuario en la sesión
             Session::put('user_id', $user->id);
             Session::put('user_type', $userType);

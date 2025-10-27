@@ -9,6 +9,7 @@ use App\Http\Controllers\ProfesorController;
 use App\Http\Controllers\EstudianteController;
 use App\Http\Controllers\InscripcionController;
 use App\Http\Controllers\AdministradorController;
+use App\Http\Controllers\AulaController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -35,3 +36,11 @@ Route::put('inscripciones/{inscripcion}/calificar', [InscripcionController::clas
 
 // Rutas para Administradores
 Route::apiResource('administradores', AdministradorController::class);
+
+// Rutas para Aulas
+Route::apiResource('aulas', AulaController::class);
+Route::get('aulas/tipo/{tipo}', [AulaController::class, 'porTipo']);
+Route::get('aulas/edificio/{edificio}', [AulaController::class, 'porEdificio']);
+Route::get('aulas-disponibles', [AulaController::class, 'disponibles']);
+Route::get('laboratorios', [AulaController::class, 'laboratorios']);
+Route::get('auditorios', [AulaController::class, 'auditorios']);

@@ -22,6 +22,7 @@ class Profesor extends Model
         'especialidad',
         'tipo_contrato',
         'password',
+        'estado',
     ];
 
     protected $hidden = [
@@ -40,5 +41,28 @@ class Profesor extends Model
     public function getNombreCompletoAttribute(): string
     {
         return $this->nombre . ' ' . $this->apellido;
+    }
+
+    // Scope para profesores activos
+    public function scopeActivos($query)
+    {
+        return $query->where('estado', 'activo');
+    }
+
+    // Método para desactivar profesor
+    public function desactivar()
+    {
+        $this->update(['estado' => 'inactivo']);
+    }
+
+    // Método para activar profesor
+    public function activar()
+    {
+        $this->update(['estado' => 'activo']);
+    }
+
+    public function cargaAcademica(): HasMany
+    {
+        return $this->hasMany(CargaAcademica::class);
     }
 }
