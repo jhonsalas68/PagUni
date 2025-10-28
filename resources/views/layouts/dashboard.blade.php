@@ -369,7 +369,25 @@
         </div>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Verificar que jQuery esté disponible
+        $(document).ready(function() {
+            console.log('✅ jQuery cargado correctamente');
+        });
+        
+        // Debug global para horarios
+        window.debugHorarios = function() {
+            console.log('🔍 Debug de elementos de horarios:');
+            console.log('- Botón verificar:', document.getElementById('btn-verificar-cambios'));
+            console.log('- Botón guardar:', document.getElementById('btn-guardar-cambios'));
+            console.log('- Panel validación:', document.getElementById('panel-validacion-cu12'));
+            console.log('- Formulario:', document.getElementById('editarHorarioForm'));
+            console.log('- Campo aula:', document.getElementById('aula_id'));
+            console.log('- Campo día:', document.getElementById('dia_semana'));
+        };
+    </script>
     <script>
         // Mobile menu functionality
         document.addEventListener('DOMContentLoaded', function() {
