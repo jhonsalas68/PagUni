@@ -137,30 +137,40 @@ class Horario extends Model
     // Método para validar conflictos mejorado con detalles
     public static function validarConflictos($carga_academica_id, $aula_id, $dia_semana, $hora_inicio, $hora_fin, $periodo_academico, $excluir_id = null)
     {
+        \Log::info('Iniciando validación de conflictos', [
+            'carga_academica_id' => $carga_academica_id,
+            'aula_id' => $aula_id,
+            'dia_semana' => $dia_semana,
+            'hora_inicio' => $hora_inicio,
+            'hora_fin' => $hora_fin,
+            'periodo_academico' => $periodo_academico,
+            'excluir_id' => $excluir_id
+        ]);
+
         // Obtener la carga académica para verificar el profesor
         $cargaAcademica = \App\Models\CargaAcademica::with(['profesor', 'grupo.materia'])->find($carga_academica_id);
         $profesor_id = $cargaAcademica ? $cargaAcademica->profesor_id : null;
 
-        // Query base para conflictos de horario
+        \Log::info('Información de la carga académica', [
+            'profesor_id' => $profesor_id,
+            'profesor_nombre' => $cargaAcademica->profesor->nombre_completo ?? 'N/A',
+            'materia' => $cargaAcademica->grupo->materia->nombre ?? 'N/A'
+        ]);
+
+        // Convertir horas a formato comparable
+        $horaInicioComparable = \Carbon\Carbon::createFromFormat('H:i', $hora_inicio);
+        $horaFinComparable = \Carbon\Carbon::createFromFormat('H:i', $hora_fin);
+
+        // Query base más robusta para conflictos de horario
         $baseQuery = self::query()
             ->with(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula'])
-            ->where('horarios.dia_semana', $dia_semana)
-            ->where('horarios.periodo_academico', $periodo_academico)
+            ->where('dia_semana', $dia_semana)
+            ->where('periodo_academico', $periodo_academico)
             ->where(function ($q) use ($hora_inicio, $hora_fin) {
-                // Verificar solapamiento de horarios
-                $q->where(function ($q1) use ($hora_inicio, $hora_fin) {
-                    // Caso 1: El nuevo horario inicia durante un horario existente
-                    $q1->where('horarios.hora_inicio', '<=', $hora_inicio)
-                       ->where('horarios.hora_fin', '>', $hora_inicio);
-                })->orWhere(function ($q2) use ($hora_inicio, $hora_fin) {
-                    // Caso 2: El nuevo horario termina durante un horario existente
-                    $q2->where('horarios.hora_inicio', '<', $hora_fin)
-                       ->where('horarios.hora_fin', '>=', $hora_fin);
-                })->orWhere(function ($q3) use ($hora_inicio, $hora_fin) {
-                    // Caso 3: El nuevo horario contiene completamente un horario existente
-                    $q3->where('horarios.hora_inicio', '>=', $hora_inicio)
-                       ->where('horarios.hora_fin', '<=', $hora_fin);
-                });
+                // Verificar solapamiento real: dos horarios se solapan si uno inicia antes de que termine el otro
+                // Fórmula: (inicio1 < fin2) AND (fin1 > inicio2)
+                $q->where('hora_inicio', '<', $hora_fin)
+                  ->where('hora_fin', '>', $hora_inicio);
             });
 
         if ($excluir_id) {
@@ -171,12 +181,37 @@ class Horario extends Model
         $conflictosProfesor = $baseQuery->clone()
             ->join('carga_academica', 'horarios.carga_academica_id', '=', 'carga_academica.id')
             ->where('carga_academica.profesor_id', $profesor_id)
+            ->select('horarios.*') // Especificar que queremos solo las columnas de horarios
             ->get();
+
+        \Log::info('Conflictos de profesor encontrados', [
+            'count' => $conflictosProfesor->count(),
+            'conflictos' => $conflictosProfesor->map(function($c) {
+                return [
+                    'id' => $c->id,
+                    'materia' => $c->cargaAcademica->grupo->materia->nombre ?? 'N/A',
+                    'aula' => $c->aula->codigo_aula ?? 'N/A',
+                    'horario' => $c->hora_inicio . '-' . $c->hora_fin
+                ];
+            })
+        ]);
 
         // Verificar conflictos de aula
         $conflictosAula = $baseQuery->clone()
             ->where('horarios.aula_id', $aula_id)
             ->get();
+
+        \Log::info('Conflictos de aula encontrados', [
+            'count' => $conflictosAula->count(),
+            'conflictos' => $conflictosAula->map(function($c) {
+                return [
+                    'id' => $c->id,
+                    'profesor' => $c->cargaAcademica->profesor->nombre_completo ?? 'N/A',
+                    'materia' => $c->cargaAcademica->grupo->materia->nombre ?? 'N/A',
+                    'horario' => $c->hora_inicio . '-' . $c->hora_fin
+                ];
+            })
+        ]);
 
         // Preparar información detallada de conflictos
         $detallesConflictoProfesor = [];
@@ -190,6 +225,7 @@ class Horario extends Model
                 'hora_inicio' => $conflicto->hora_inicio,
                 'hora_fin' => $conflicto->hora_fin,
                 'tipo_clase' => $conflicto->tipo_clase,
+                'grupo' => $conflicto->cargaAcademica->grupo->identificador ?? 'N/A',
             ];
         }
 
@@ -201,17 +237,27 @@ class Horario extends Model
                 'hora_inicio' => $conflicto->hora_inicio,
                 'hora_fin' => $conflicto->hora_fin,
                 'tipo_clase' => $conflicto->tipo_clase,
+                'grupo' => $conflicto->cargaAcademica->grupo->identificador ?? 'N/A',
             ];
         }
 
+        $disponible = $conflictosProfesor->isEmpty() && $conflictosAula->isEmpty();
+
+        \Log::info('Resultado final de validación', [
+            'disponible' => $disponible,
+            'conflicto_profesor' => !$conflictosProfesor->isEmpty(),
+            'conflicto_aula' => !$conflictosAula->isEmpty()
+        ]);
+
         return [
-            'disponible' => $conflictosProfesor->isEmpty() && $conflictosAula->isEmpty(),
+            'disponible' => $disponible,
             'conflicto_profesor' => !$conflictosProfesor->isEmpty(),
             'conflicto_aula' => !$conflictosAula->isEmpty(),
             'detalles_profesor' => $detallesConflictoProfesor,
             'detalles_aula' => $detallesConflictoAula,
             'profesor_nombre' => $cargaAcademica->profesor->nombre_completo ?? 'N/A',
             'materia_nombre' => $cargaAcademica->grupo->materia->nombre ?? 'N/A',
+            'total_conflictos' => $conflictosProfesor->count() + $conflictosAula->count(),
         ];
     }
 

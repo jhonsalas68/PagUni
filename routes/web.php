@@ -66,6 +66,7 @@ Route::middleware(['web'])->group(function () {
         Route::get('horarios/{horario}/test-sugerencias', [\App\Http\Controllers\Admin\HorarioController::class, 'testSugerencias'])->name('horarios.test-sugerencias');
         Route::get('horarios/{horario}/sugerencias-get', [\App\Http\Controllers\Admin\HorarioController::class, 'sugerenciasGet'])->name('horarios.sugerencias-get');
         Route::get('horarios/{horario}/debug-simple', [\App\Http\Controllers\Admin\HorarioController::class, 'debugSimple'])->name('horarios.debug-simple');
+        Route::get('horarios/logs-validacion', [\App\Http\Controllers\Admin\HorarioController::class, 'obtenerLogsValidacion'])->name('horarios.logs-validacion');
         
         // CU-13: Gestión de Días No Laborables/Feriados
         Route::resource('feriados', \App\Http\Controllers\Admin\FeriadoController::class);

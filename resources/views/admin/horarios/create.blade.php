@@ -7,15 +7,20 @@
 @endsection
 
 @section('content')
-<div class="container-fluid">
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Nuevo Horario</h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 pb-3 border-bottom">
+            <h1 class="h2 mb-2 mb-md-0">
+                <span class="d-none d-sm-inline">Nuevo Horario</span>
+                <span class="d-sm-none">Nuevo</span>
+            </h1>
             <a href="{{ route('admin.horarios.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Volver
+                <i class="fas fa-arrow-left"></i> 
+                <span class="d-none d-sm-inline">Volver</span>
             </a>
         </div>
     </div>
+</div>
 
     @if($errors->has('error'))
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -26,7 +31,7 @@
 
     <div class="card shadow">
         <div class="card-header">
-            <h6 class="m-0 font-weight-bold text-primary">Información del Horario</h6>
+            <h6 class="m-0 fw-bold text-primary">Información del Horario</h6>
         </div>
         <div class="card-body">
             <form method="POST" action="{{ route('admin.horarios.store') }}" id="horarioForm">

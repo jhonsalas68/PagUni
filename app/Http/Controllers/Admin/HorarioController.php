@@ -265,6 +265,19 @@ class HorarioController extends Controller
             }
         }
 
+        // LOG DE DATOS PARA UPDATE
+        \Log::info('=== MÉTODO UPDATE - VALIDACIÓN FINAL ===', [
+            'horario_id' => $horario->id,
+            'datos_request' => [
+                'carga_academica_id' => $request->carga_academica_id,
+                'aula_id' => $request->aula_id,
+                'dia_semana' => $request->dia_semana,
+                'hora_inicio' => $request->hora_inicio,
+                'hora_fin' => $request->hora_fin,
+                'periodo_academico' => $request->periodo_academico ?? $horario->periodo_academico
+            ]
+        ]);
+
         // Validar conflictos excluyendo el horario actual
         $validacion = Horario::validarConflictos(
             $request->carga_academica_id,
@@ -275,6 +288,13 @@ class HorarioController extends Controller
             $request->periodo_academico ?? $horario->periodo_academico,
             $horario->id // Excluir el horario actual
         );
+
+        \Log::info('Resultado validación en UPDATE', [
+            'disponible' => $validacion['disponible'],
+            'conflicto_profesor' => $validacion['conflicto_profesor'],
+            'conflicto_aula' => $validacion['conflicto_aula'],
+            'total_conflictos' => $validacion['total_conflictos'] ?? 0
+        ]);
 
         if (!$validacion['disponible']) {
             $mensajesError = [];
@@ -287,27 +307,17 @@ class HorarioController extends Controller
                 $mensajesError[] = "Conflicto de aula: El aula ya está ocupada en este horario.";
             }
             
+            \Log::warning('UPDATE RECHAZADO por conflictos', [
+                'mensajes_error' => $mensajesError,
+                'detalles_conflictos' => $validacion
+            ]);
+            
             return back()->withErrors(['error' => implode(' ', $mensajesError)])->withInput();
         }
 
-        // Verificar conflictos de horario (excluyendo el horario actual)
-        $conflicto = Horario::where('aula_id', $request->aula_id)
-                           ->where('dia_semana', $request->dia_semana)
-                           ->where('id', '!=', $horario->id)
-                           ->where(function($query) use ($request) {
-                               $query->whereBetween('hora_inicio', [$request->hora_inicio, $request->hora_fin])
-                                     ->orWhereBetween('hora_fin', [$request->hora_inicio, $request->hora_fin])
-                                     ->orWhere(function($q) use ($request) {
-                                         $q->where('hora_inicio', '<=', $request->hora_inicio)
-                                           ->where('hora_fin', '>=', $request->hora_fin);
-                                     });
-                           })
-                           ->exists();
-
-        if ($conflicto) {
-            return back()->withErrors(['error' => 'Ya existe un horario en esa aula para ese día y hora.'])
-                        ->withInput();
-        }
+        // NOTA: La validación de conflictos ya se hizo arriba con validarConflictos()
+        // Esta validación duplicada se elimina para evitar inconsistencias
+        // La validación completa y correcta está en el método validarConflictos()
 
         // Registrar cambios para auditoría
         $cambiosRealizados = [];
@@ -402,6 +412,14 @@ class HorarioController extends Controller
      */
     public function validarDisponibilidad(Request $request)
     {
+        // LOG DETALLADO DE LA PETICIÓN
+        \Log::info('=== VALIDACIÓN DE DISPONIBILIDAD INICIADA ===', [
+            'timestamp' => now()->toDateTimeString(),
+            'datos_recibidos' => $request->all(),
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
         $request->validate([
             'carga_academica_id' => 'required|exists:carga_academica,id',
             'aula_id' => 'required|exists:aulas,id',
@@ -410,6 +428,27 @@ class HorarioController extends Controller
             'hora_fin' => 'required|date_format:H:i|after:hora_inicio',
             'periodo_academico' => 'required|string|max:20',
             'excluir_id' => 'nullable|integer',
+        ]);
+
+        // LOG DE DATOS VALIDADOS
+        \Log::info('Datos validados correctamente', [
+            'carga_academica_id' => $request->carga_academica_id,
+            'aula_id' => $request->aula_id,
+            'dia_semana' => $request->dia_semana,
+            'hora_inicio' => $request->hora_inicio,
+            'hora_fin' => $request->hora_fin,
+            'periodo_academico' => $request->periodo_academico,
+            'excluir_id' => $request->excluir_id
+        ]);
+
+        // Obtener información adicional para el log
+        $aula = \App\Models\Aula::find($request->aula_id);
+        $cargaAcademica = \App\Models\CargaAcademica::with(['profesor', 'grupo.materia'])->find($request->carga_academica_id);
+        
+        \Log::info('Información contextual', [
+            'aula_codigo' => $aula ? $aula->codigo_aula : 'N/A',
+            'profesor' => $cargaAcademica && $cargaAcademica->profesor ? $cargaAcademica->profesor->nombre_completo : 'N/A',
+            'materia' => $cargaAcademica && $cargaAcademica->grupo && $cargaAcademica->grupo->materia ? $cargaAcademica->grupo->materia->nombre : 'N/A'
         ]);
 
         $validacion = Horario::validarConflictos(
@@ -422,6 +461,16 @@ class HorarioController extends Controller
             $request->excluir_id
         );
 
+        // LOG DEL RESULTADO DE VALIDACIÓN
+        \Log::info('Resultado de validación obtenido', [
+            'disponible' => $validacion['disponible'],
+            'conflicto_profesor' => $validacion['conflicto_profesor'],
+            'conflicto_aula' => $validacion['conflicto_aula'],
+            'total_conflictos' => $validacion['total_conflictos'] ?? 0,
+            'detalles_profesor_count' => count($validacion['detalles_profesor'] ?? []),
+            'detalles_aula_count' => count($validacion['detalles_aula'] ?? [])
+        ]);
+
         // Preparar respuesta con información detallada
         $response = [
             'disponible' => $validacion['disponible'],
@@ -433,29 +482,127 @@ class HorarioController extends Controller
             $mensajes = [];
             
             if ($validacion['conflicto_profesor']) {
-                $mensajes[] = "El profesor {$validacion['profesor_nombre']} ya tiene clase asignada";
+                $detalleProfesor = $validacion['detalles_profesor'][0] ?? [];
+                $materiaConflicto = $detalleProfesor['materia'] ?? 'otra materia';
+                $aulaConflicto = $detalleProfesor['aula'] ?? 'N/A';
+                $grupoConflicto = $detalleProfesor['grupo'] ?? '';
+                $horarioConflicto = ($detalleProfesor['hora_inicio'] ?? '') . '-' . ($detalleProfesor['hora_fin'] ?? '');
+                
+                $grupoTexto = $grupoConflicto ? " (Grupo {$grupoConflicto})" : '';
+                
+                $mensajes[] = "🚫 CONFLICTO DE DOCENTE: El profesor {$validacion['profesor_nombre']} ya tiene clase de '{$materiaConflicto}'{$grupoTexto} en aula {$aulaConflicto} de {$horarioConflicto}";
                 $response['conflictos']['profesor'] = [
                     'tipo' => 'profesor',
-                    'mensaje' => "Conflicto de profesor: {$validacion['profesor_nombre']}",
-                    'detalles' => $validacion['detalles_profesor']
+                    'mensaje' => "Conflicto de Docente: {$validacion['profesor_nombre']} ya tiene clase asignada",
+                    'detalles' => $validacion['detalles_profesor'],
+                    'detalle_especifico' => "Ya tiene clase de '{$materiaConflicto}'{$grupoTexto} en aula {$aulaConflicto} de {$horarioConflicto}",
+                    'materia_conflicto' => $materiaConflicto,
+                    'aula_conflicto' => $aulaConflicto,
+                    'grupo_conflicto' => $grupoConflicto,
+                    'horario_conflicto' => $horarioConflicto
                 ];
             }
 
             if ($validacion['conflicto_aula']) {
-                $mensajes[] = "El aula ya está ocupada";
+                $detalleAula = $validacion['detalles_aula'][0] ?? [];
+                $profesorConflicto = $detalleAula['profesor'] ?? 'otro profesor';
+                $materiaConflicto = $detalleAula['materia'] ?? 'otra materia';
+                $grupoConflicto = $detalleAula['grupo'] ?? '';
+                $horarioConflicto = ($detalleAula['hora_inicio'] ?? '') . '-' . ($detalleAula['hora_fin'] ?? '');
+                
+                $aula = \App\Models\Aula::find($request->aula_id);
+                $aulaNombre = $aula ? $aula->codigo_aula : 'N/A';
+                $grupoTexto = $grupoConflicto ? " (Grupo {$grupoConflicto})" : '';
+                
+                $mensajes[] = "🚫 CONFLICTO DE AULA: El aula {$aulaNombre} ya está ocupada por {$profesorConflicto} con la materia '{$materiaConflicto}'{$grupoTexto} de {$horarioConflicto}";
                 $response['conflictos']['aula'] = [
                     'tipo' => 'aula',
-                    'mensaje' => "Conflicto de aula",
-                    'detalles' => $validacion['detalles_aula']
+                    'mensaje' => "Conflicto de Aula: {$aulaNombre} ya está ocupada",
+                    'detalles' => $validacion['detalles_aula'],
+                    'detalle_especifico' => "Ocupada por {$profesorConflicto} con '{$materiaConflicto}'{$grupoTexto} de {$horarioConflicto}",
+                    'profesor_conflicto' => $profesorConflicto,
+                    'materia_conflicto' => $materiaConflicto,
+                    'grupo_conflicto' => $grupoConflicto,
+                    'horario_conflicto' => $horarioConflicto
                 ];
             }
 
-            $response['mensaje'] = implode(' y ', $mensajes);
+            $response['mensaje'] = implode('. ', $mensajes);
+            $response['total_conflictos'] = $validacion['total_conflictos'] ?? 0;
         } else {
             $response['mensaje'] = "Horario disponible para {$validacion['profesor_nombre']} - {$validacion['materia_nombre']}";
         }
 
+        // LOG DE LA RESPUESTA FINAL
+        \Log::info('=== RESPUESTA FINAL DE VALIDACIÓN ===', [
+            'disponible' => $response['disponible'],
+            'mensaje' => $response['mensaje'],
+            'tiene_conflictos' => !empty($response['conflictos']),
+            'tipos_conflicto' => array_keys($response['conflictos']),
+            'response_completa' => $response
+        ]);
+
         return response()->json($response);
+    }
+
+    /**
+     * Obtener logs de validación para debugging
+     */
+    public function obtenerLogsValidacion(Request $request)
+    {
+        try {
+            // Leer los últimos logs del archivo de Laravel
+            $logPath = storage_path('logs/laravel.log');
+            
+            if (!file_exists($logPath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Archivo de logs no encontrado',
+                    'logs' => []
+                ]);
+            }
+            
+            // Leer las últimas 50 líneas del log
+            $lines = [];
+            $file = new SplFileObject($logPath, 'r');
+            $file->seek(PHP_INT_MAX);
+            $totalLines = $file->key();
+            
+            $startLine = max(0, $totalLines - 100);
+            $file->seek($startLine);
+            
+            $validationLogs = [];
+            while (!$file->eof()) {
+                $line = $file->current();
+                $file->next();
+                
+                // Filtrar solo logs relacionados con validación
+                if (strpos($line, 'VALIDACIÓN DE DISPONIBILIDAD') !== false || 
+                    strpos($line, 'validación de conflictos') !== false ||
+                    strpos($line, 'Resultado de validación') !== false ||
+                    strpos($line, 'Conflictos de') !== false) {
+                    
+                    $validationLogs[] = [
+                        'timestamp' => date('Y-m-d H:i:s'),
+                        'message' => trim($line),
+                        'context' => null
+                    ];
+                }
+            }
+            
+            return response()->json([
+                'success' => true,
+                'logs' => array_slice($validationLogs, -20), // Últimos 20 logs
+                'total' => count($validationLogs)
+            ]);
+            
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener logs: ' . $e->getMessage(),
+                'logs' => []
+            ]);
+        }
     }
 
     /**
