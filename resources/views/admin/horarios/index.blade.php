@@ -29,15 +29,13 @@
                 <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th>Día</th>
-                            <th>Hora</th>
-                            <th>Duración</th>
+                            <th>Día y Aula</th>
+                            <th>Horario</th>
                             <th>Materia</th>
                             <th>Profesor</th>
                             <th>Grupo</th>
-                            <th>Aula</th>
+                            <th>Tipo de Clase</th>
                             <th>Período</th>
-                            <th>Tipo</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
@@ -47,41 +45,62 @@
                             <td>
                                 @php
                                     $dias = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+                                    $diasCortos = ['', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+                                    
+                                    // Obtener todos los horarios de la misma materia para mostrar el patrón completo
+                                    $horariosMateria = \App\Models\Horario::where('carga_academica_id', $horario->carga_academica_id)
+                                        ->with(['aula'])
+                                        ->orderBy('dia_semana')
+                                        ->get();
+                                    
+                                    $patronCompleto = [];
+                                    foreach($horariosMateria as $h) {
+                                        $diaTexto = $diasCortos[$h->dia_semana] ?? 'N/A';
+                                        $aulaTexto = $h->aula->codigo_aula ?? 'N/A';
+                                        if($h->aula->tipo_aula === 'laboratorio') {
+                                            $aulaTexto = 'Lab ' . str_replace(['Lab', 'LAB', 'Laboratorio'], '', $aulaTexto);
+                                        }
+                                        $patronCompleto[] = $diaTexto . ' ' . $aulaTexto;
+                                    }
+                                    $patronTexto = implode(' - ', $patronCompleto);
                                 @endphp
-                                <span class="badge bg-primary">{{ $dias[$horario->dia_semana] ?? 'N/A' }}</span>
+                                <div>
+                                    <strong>{{ $patronTexto }}</strong>
+                                    @if($horariosMateria->count() > 1)
+                                        <br><small class="text-muted">{{ $horariosMateria->count() }} días por semana</small>
+                                    @endif
+                                </div>
                             </td>
-                            <td>{{ $horario->hora_inicio }} - {{ $horario->hora_fin }}</td>
                             <td>
-                                <span class="badge bg-success">
-                                    {{ $horario->duracion_horas ? number_format($horario->duracion_horas, 2) . ' hrs' : 'N/A' }}
-                                </span>
-                                @if($horario->es_semestral)
-                                    <br><small class="text-muted">{{ number_format($horario->carga_horaria_semestral, 0) }} hrs/sem</small>
-                                @endif
+                                <strong>{{ substr($horario->hora_inicio, 0, 5) }} - {{ substr($horario->hora_fin, 0, 5) }}</strong>
+                                <br><small class="text-success">{{ $horario->duracion_horas ? number_format($horario->duracion_horas, 1) . 'h' : 'N/A' }}</small>
                             </td>
-                            <td>{{ $horario->cargaAcademica->grupo->materia->nombre ?? 'N/A' }}</td>
+                            <td>
+                                <strong>{{ $horario->cargaAcademica->grupo->materia->nombre ?? 'N/A' }}</strong>
+                                <br><small class="text-muted">{{ $horario->cargaAcademica->grupo->materia->codigo ?? '' }}</small>
+                            </td>
                             <td>{{ $horario->cargaAcademica->profesor->nombre_completo ?? 'N/A' }}</td>
-                            <td>{{ $horario->cargaAcademica->grupo->identificador ?? 'N/A' }}</td>
-                            <td>{{ $horario->aula->codigo_aula ?? 'N/A' }}</td>
                             <td>
-                                <span class="badge bg-info">{{ $horario->periodo_academico ?? 'N/A' }}</span>
-                                @if($horario->es_semestral)
-                                    <br><small class="badge bg-success">Semestral</small>
-                                @else
-                                    <br><small class="badge bg-warning">Específico</small>
-                                @endif
+                                <span class="badge bg-secondary">{{ $horario->cargaAcademica->grupo->identificador ?? 'N/A' }}</span>
                             </td>
                             <td>
                                 @php
                                     $tipos = [
-                                        'teorica' => 'bg-info',
-                                        'practica' => 'bg-warning',
-                                        'laboratorio' => 'bg-success'
+                                        'teorica' => ['bg-info', 'fas fa-book'],
+                                        'practica' => ['bg-warning text-dark', 'fas fa-tools'],
+                                        'laboratorio' => ['bg-success', 'fas fa-flask']
                                     ];
+                                    $tipoConfig = $tipos[$horario->tipo_clase] ?? ['bg-secondary', 'fas fa-question'];
                                 @endphp
-                                <span class="badge {{ $tipos[$horario->tipo_clase] ?? 'bg-secondary' }}">
-                                    {{ ucfirst($horario->tipo_clase) }}
+                                <span class="badge {{ $tipoConfig[0] }}">
+                                    <i class="{{ $tipoConfig[1] }}"></i> {{ ucfirst($horario->tipo_clase) }}
                                 </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ $horario->periodo_academico ?? 'N/A' }}</span>
+                                @if($horario->es_semestral)
+                                    <br><small class="badge bg-success">Semestral</small>
+                                @endif
                             </td>
                             <td>
                                 <div class="btn-group" role="group">

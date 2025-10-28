@@ -50,6 +50,42 @@
                         </div>
                     </div>
 
+                    @if($horario->usar_configuracion_por_dia && $horario->configuracion_dias)
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Configuración Específica por Día:</label>
+                                <div class="card border-warning">
+                                    <div class="card-header bg-warning text-dark">
+                                        <h6 class="mb-0"><i class="fas fa-cogs"></i> Configuración Avanzada</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Día</th>
+                                                        <th>Aula</th>
+                                                        <th>Tipo de Clase</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach($horario->getConfiguracionCompleta() as $config)
+                                                    <tr>
+                                                        <td><span class="badge bg-primary">{{ $config['dia_nombre'] }}</span></td>
+                                                        <td><span class="badge bg-info">{{ $config['aula_nombre'] }}</span></td>
+                                                        <td><span class="badge bg-success">{{ $config['tipo_clase_nombre'] }}</span></td>
+                                                    </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">

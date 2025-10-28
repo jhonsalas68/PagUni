@@ -59,6 +59,18 @@ Route::middleware(['web'])->group(function () {
         
         // Gestión de Horarios
         Route::resource('horarios', \App\Http\Controllers\Admin\HorarioController::class);
+        Route::post('horarios/validar-disponibilidad', [\App\Http\Controllers\Admin\HorarioController::class, 'validarDisponibilidad'])->name('horarios.validar-disponibilidad');
+        Route::post('horarios/{horario}/validar-cambios-cu12', [\App\Http\Controllers\Admin\HorarioController::class, 'validarCambiosCU12'])->name('horarios.validar-cambios-cu12');
+        Route::post('horarios/{horario}/sugerir-alternativas', [\App\Http\Controllers\Admin\HorarioController::class, 'sugerirAlternativas'])->name('horarios.sugerir-alternativas');
+        Route::get('horarios/{horario}/horarios-relacionados', [\App\Http\Controllers\Admin\HorarioController::class, 'obtenerHorariosRelacionados'])->name('horarios.horarios-relacionados');
+        Route::get('horarios/{horario}/test-sugerencias', [\App\Http\Controllers\Admin\HorarioController::class, 'testSugerencias'])->name('horarios.test-sugerencias');
+        Route::get('horarios/{horario}/sugerencias-get', [\App\Http\Controllers\Admin\HorarioController::class, 'sugerenciasGet'])->name('horarios.sugerencias-get');
+        Route::get('horarios/{horario}/debug-simple', [\App\Http\Controllers\Admin\HorarioController::class, 'debugSimple'])->name('horarios.debug-simple');
+        
+        // CU-13: Gestión de Días No Laborables/Feriados
+        Route::resource('feriados', \App\Http\Controllers\Admin\FeriadoController::class);
+        Route::post('feriados/verificar-fecha', [\App\Http\Controllers\Admin\FeriadoController::class, 'verificarFecha'])->name('feriados.verificar-fecha');
+        Route::get('feriados/dias-lectivos', [\App\Http\Controllers\Admin\FeriadoController::class, 'diasLectivos'])->name('feriados.dias-lectivos');
     });
 
     // Rutas del Profesor

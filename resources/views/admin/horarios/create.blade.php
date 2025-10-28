@@ -2,6 +2,10 @@
 
 @section('title', 'Nuevo Horario')
 
+@section('head')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@endsection
+
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -52,7 +56,10 @@
                     
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label for="aula_id" class="form-label">Aula <span class="text-danger">*</span></label>
+                            <label for="aula_id" class="form-label">
+                                Aula <span class="text-danger">*</span>
+                                <span id="indicador-disponibilidad" class="badge ms-2" style="display: none;"></span>
+                            </label>
                             <select class="form-select @error('aula_id') is-invalid @enderror" 
                                     id="aula_id" name="aula_id" required>
                                 <option value="">Seleccionar aula...</option>
@@ -65,6 +72,22 @@
                             @error('aula_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                            <small class="text-muted">Aula por defecto (se puede personalizar por día)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuración avanzada por día -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="usar_configuracion_por_dia" name="usar_configuracion_por_dia" value="1">
+                                <label class="form-check-label" for="usar_configuracion_por_dia">
+                                    <strong>Configuración Avanzada por Día</strong>
+                                </label>
+                                <small class="text-muted d-block">Permite asignar aulas y tipos de clase diferentes para cada día</small>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -119,6 +142,22 @@
                     </div>
                 </div>
 
+                <!-- Configuración específica por día -->
+                <div class="row" id="configuracion-por-dia" style="display: none;">
+                    <div class="col-12">
+                        <div class="card border-warning">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0"><i class="fas fa-cogs"></i> Configuración Específica por Día</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="config-dias-container">
+                                    <!-- Se generará dinámicamente con JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Horarios y duración -->
                 <div class="row">
                     <div class="col-md-3">
@@ -168,6 +207,7 @@
                             @error('tipo_clase')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                            <small class="text-muted">Tipo por defecto (se puede personalizar por día)</small>
                         </div>
                     </div>
                 </div>
@@ -415,6 +455,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const filtroPeriodo = document.getElementById('filtro_periodo');
     const filtroAula = document.getElementById('filtro_aula');
     const tablaHorarios = document.getElementById('tabla-horarios-existentes');
+    const usarConfigPorDia = document.getElementById('usar_configuracion_por_dia');
+    const configPorDiaDiv = document.getElementById('configuracion-por-dia');
+    const configDiasContainer = document.getElementById('config-dias-container');
 
     // Función para calcular duración
     function calcularDuracion() {
@@ -500,6 +543,71 @@ document.addEventListener('DOMContentLoaded', function() {
         actualizarResumen();
     }
 
+    // Función para mostrar/ocultar configuración por día
+    function toggleConfiguracionPorDia() {
+        if (usarConfigPorDia.checked) {
+            configPorDiaDiv.style.display = 'block';
+            // Deshabilitar campos globales
+            document.getElementById('aula_id').disabled = true;
+            document.getElementById('tipo_clase').disabled = true;
+            generarConfiguracionDias();
+        } else {
+            configPorDiaDiv.style.display = 'none';
+            // Habilitar campos globales
+            document.getElementById('aula_id').disabled = false;
+            document.getElementById('tipo_clase').disabled = false;
+        }
+        actualizarResumen();
+    }
+
+    // Función para generar configuración específica por día
+    function generarConfiguracionDias() {
+        const diasSeleccionados = Array.from(diasCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => ({ value: cb.value, name: cb.nextElementSibling.textContent }));
+
+        if (diasSeleccionados.length === 0) {
+            configDiasContainer.innerHTML = '<p class="text-muted">Selecciona los días para configurar</p>';
+            return;
+        }
+
+        let html = '';
+        diasSeleccionados.forEach(dia => {
+            html += `
+                <div class="row mb-3 border-bottom pb-3">
+                    <div class="col-md-2">
+                        <label class="form-label"><strong>${dia.name}</strong></label>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">Aula</label>
+                        <select class="form-select config-aula" name="config_dias[${dia.value}][aula_id]" required>
+                            <option value="">Seleccionar aula...</option>
+                            @foreach($aulas as $aula)
+                                <option value="{{ $aula->id }}">{{ $aula->codigo_aula }} - {{ $aula->nombre }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">Tipo de Clase</label>
+                        <select class="form-select config-tipo" name="config_dias[${dia.value}][tipo_clase]" required>
+                            <option value="">Seleccionar tipo...</option>
+                            <option value="teorica">Teórica</option>
+                            <option value="practica">Práctica</option>
+                            <option value="laboratorio">Laboratorio</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+        });
+
+        configDiasContainer.innerHTML = html;
+
+        // Agregar event listeners para validación en tiempo real
+        document.querySelectorAll('.config-aula, .config-tipo').forEach(select => {
+            select.addEventListener('change', validarDisponibilidadTiempoReal);
+        });
+    }
+
     // Función para filtrar horarios existentes
     function filtrarHorarios() {
         const periodoSeleccionado = filtroPeriodo.value;
@@ -524,7 +632,112 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Función para resaltar conflictos
+    // Función para validar disponibilidad en tiempo real
+    async function validarDisponibilidadTiempoReal() {
+        const cargaAcademicaId = document.getElementById('carga_academica_id').value;
+        const aulaId = document.getElementById('aula_id').value;
+        const periodoAcademico = document.getElementById('periodo_academico').value;
+        const horaInicioVal = horaInicio.value;
+        const horaFinVal = horaFin.value;
+
+        // Limpiar alertas previas
+        const alertaAnterior = document.getElementById('alerta-conflictos');
+        if (alertaAnterior) {
+            alertaAnterior.remove();
+        }
+
+        if (!cargaAcademicaId || !aulaId || !horaInicioVal || !horaFinVal || !periodoAcademico) {
+            return;
+        }
+
+        const diasSeleccionados = Array.from(diasCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+
+        if (diasSeleccionados.length === 0) {
+            return;
+        }
+
+        // Validar cada día seleccionado
+        for (const dia of diasSeleccionados) {
+            try {
+                const response = await fetch('{{ route("admin.horarios.validar-disponibilidad") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        carga_academica_id: cargaAcademicaId,
+                        aula_id: aulaId,
+                        dia_semana: dia,
+                        hora_inicio: horaInicioVal,
+                        hora_fin: horaFinVal,
+                        periodo_academico: periodoAcademico
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (!data.disponible) {
+                    mostrarAlertaConflicto(data, dia);
+                    break; // Mostrar solo el primer conflicto encontrado
+                }
+            } catch (error) {
+                console.error('Error validando disponibilidad:', error);
+            }
+        }
+    }
+
+    // Función para mostrar alerta de conflicto
+    function mostrarAlertaConflicto(data, dia) {
+        const diasNombres = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        
+        let detallesHtml = '';
+        
+        if (data.conflictos.profesor) {
+            detallesHtml += `
+                <div class="mt-2">
+                    <strong>Conflicto de Profesor:</strong>
+                    <ul class="mb-0">
+            `;
+            data.conflictos.profesor.detalles.forEach(detalle => {
+                detallesHtml += `
+                    <li>${detalle.materia} en ${detalle.aula} (${detalle.hora_inicio}-${detalle.hora_fin})</li>
+                `;
+            });
+            detallesHtml += '</ul></div>';
+        }
+
+        if (data.conflictos.aula) {
+            detallesHtml += `
+                <div class="mt-2">
+                    <strong>Conflicto de Aula:</strong>
+                    <ul class="mb-0">
+            `;
+            data.conflictos.aula.detalles.forEach(detalle => {
+                detallesHtml += `
+                    <li>${detalle.profesor} - ${detalle.materia} (${detalle.hora_inicio}-${detalle.hora_fin})</li>
+                `;
+            });
+            detallesHtml += '</ul></div>';
+        }
+
+        const alertaHtml = `
+            <div id="alerta-conflictos" class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+                <h6><i class="fas fa-exclamation-triangle"></i> Conflicto Detectado - ${diasNombres[dia]}</h6>
+                <p class="mb-1">${data.mensaje}</p>
+                ${detallesHtml}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+
+        // Insertar la alerta después del formulario
+        const formulario = document.querySelector('#horarioForm');
+        formulario.insertAdjacentHTML('afterend', alertaHtml);
+    }
+
+    // Función para resaltar conflictos en la tabla
     function resaltarConflictos() {
         const diasSeleccionados = Array.from(diasCheckboxes)
             .filter(cb => cb.checked)
@@ -569,6 +782,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 fila.style.fontWeight = 'normal';
             }
         });
+
+        // Validar disponibilidad en tiempo real
+        validarDisponibilidadTiempoReal();
     }
 
     // Event listeners
@@ -583,18 +799,30 @@ document.addEventListener('DOMContentLoaded', function() {
     diasCheckboxes.forEach(cb => cb.addEventListener('change', () => {
         actualizarResumen();
         resaltarConflictos();
+        if (usarConfigPorDia.checked) {
+            generarConfiguracionDias();
+        }
     }));
     esSemestralCheckbox.addEventListener('change', toggleFechasEspecificas);
     semanasDuracion.addEventListener('input', actualizarResumen);
     filtroPeriodo.addEventListener('change', filtrarHorarios);
     filtroAula.addEventListener('change', filtrarHorarios);
+    usarConfigPorDia.addEventListener('change', toggleConfiguracionPorDia);
     
     // Event listeners para detectar conflictos
-    document.getElementById('aula_id').addEventListener('change', resaltarConflictos);
-    document.getElementById('periodo_academico').addEventListener('input', resaltarConflictos);
+    document.getElementById('aula_id').addEventListener('change', () => {
+        resaltarConflictos();
+        validarDisponibilidadTiempoReal();
+    });
+    document.getElementById('periodo_academico').addEventListener('input', () => {
+        resaltarConflictos();
+        validarDisponibilidadTiempoReal();
+    });
+    document.getElementById('carga_academica_id').addEventListener('change', validarDisponibilidadTiempoReal);
 
     // Inicializar estado
     toggleFechasEspecificas();
+    toggleConfiguracionPorDia();
     filtrarHorarios();
 
     // Validación del formulario
