@@ -49,18 +49,36 @@
                             <td><span class="badge bg-success">{{ $materia->creditos }}</span></td>
                             <td>
                                 <div class="btn-group" role="group">
-                                    <a href="{{ route('admin.materias.show', $materia) }}" class="btn btn-sm btn-info">
+                                    <a href="{{ route('admin.materias.show', $materia) }}" class="btn btn-sm btn-info" title="Ver detalles">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a href="{{ route('admin.materias.edit', $materia) }}" class="btn btn-sm btn-warning">
+                                    <a href="{{ route('admin.materias.edit', $materia) }}" class="btn btn-sm btn-warning" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </a>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm btn-success dropdown-toggle" data-bs-toggle="dropdown" title="Acciones rápidas">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="{{ route('admin.grupos.create', ['materia_id' => $materia->id]) }}">
+                                                <i class="fas fa-users"></i> Crear Grupo
+                                            </a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item" href="{{ route('admin.cargas-academicas.create', ['materia_id' => $materia->id]) }}">
+                                                <i class="fas fa-chalkboard-teacher"></i> Asignar Profesor
+                                            </a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item" href="{{ route('admin.horarios.create', ['materia_id' => $materia->id]) }}">
+                                                <i class="fas fa-calendar-alt"></i> Crear Horario
+                                            </a></li>
+                                        </ul>
+                                    </div>
                                     <form method="POST" action="{{ route('admin.materias.destroy', $materia) }}" 
                                           style="display: inline;" 
                                           onsubmit="return confirm('¿Eliminar esta materia?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Eliminar">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>

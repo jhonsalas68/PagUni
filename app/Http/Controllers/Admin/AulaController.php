@@ -10,30 +10,18 @@ class AulaController extends Controller
 {
     public function index()
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $aulas = Aula::orderBy('codigo_aula')->get();
+$aulas = Aula::orderBy('codigo_aula')->get();
         return view('admin.aulas.index', compact('aulas'));
     }
 
     public function create()
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        return view('admin.aulas.create');
+return view('admin.aulas.create');
     }
 
     public function store(Request $request)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $request->validate([
+$request->validate([
             'codigo_aula' => 'required|string|max:20|unique:aulas,codigo_aula',
             'nombre' => 'required|string|max:255',
             'capacidad' => 'required|integer|min:1',
@@ -63,29 +51,17 @@ class AulaController extends Controller
 
     public function show(Aula $aula)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        return view('admin.aulas.show', compact('aula'));
+return view('admin.aulas.show', compact('aula'));
     }
 
     public function edit(Aula $aula)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        return view('admin.aulas.edit', compact('aula'));
+return view('admin.aulas.edit', compact('aula'));
     }
 
     public function update(Request $request, Aula $aula)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $request->validate([
+$request->validate([
             'codigo_aula' => 'required|string|max:20|unique:aulas,codigo_aula,' . $aula->id,
             'nombre' => 'required|string|max:255',
             'capacidad' => 'required|integer|min:1',
@@ -115,11 +91,7 @@ class AulaController extends Controller
 
     public function destroy(Aula $aula)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $aula->delete();
+$aula->delete();
 
         return redirect()->route('admin.aulas.index')
             ->with('success', 'Aula eliminada exitosamente.');

@@ -295,6 +295,28 @@
                             </a>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ route('reportes.index') }}" class="btn btn-secondary btn-block w-100">
+                                <i class="fas fa-chart-bar"></i> Ver Reportes
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ route('reportes.bitacora') }}" class="btn btn-danger btn-block w-100">
+                                <i class="fas fa-list-alt"></i> Ver Bitácora
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ route('admin.panel-asistencia') }}" class="btn btn-dark btn-block w-100">
+                                <i class="fas fa-tv"></i> Panel Asistencia
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ route('consulta.aulas.index') }}" class="btn btn-outline-primary btn-block w-100">
+                                <i class="fas fa-search"></i> Consultar Aulas
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

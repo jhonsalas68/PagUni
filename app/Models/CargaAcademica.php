@@ -17,6 +17,7 @@ class CargaAcademica extends Model
         'profesor_id',
         'grupo_id',
         'periodo',
+        'periodo_academico',
         'estado',
     ];
 

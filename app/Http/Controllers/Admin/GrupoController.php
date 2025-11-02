@@ -11,31 +11,21 @@ class GrupoController extends Controller
 {
     public function index()
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $grupos = Grupo::with('materia.carrera')->orderBy('identificador')->get();
+$grupos = Grupo::with('materia.carrera')->orderBy('identificador')->get();
         return view('admin.grupos.index', compact('grupos'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
         $materias = Materia::with('carrera')->orderBy('nombre')->get();
-        return view('admin.grupos.create', compact('materias'));
+        $materiaSeleccionada = $request->input('materia_id');
+        
+        return view('admin.grupos.create', compact('materias', 'materiaSeleccionada'));
     }
 
     public function store(Request $request)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $request->validate([
+$request->validate([
             'identificador' => 'required|string|max:10',
             'materia_id' => 'required|exists:materias,id',
             'capacidad_maxima' => 'required|integer|min:1',
@@ -60,31 +50,19 @@ class GrupoController extends Controller
 
     public function show(Grupo $grupo)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $grupo->load(['materia.carrera', 'cargaAcademica.profesor']);
+$grupo->load(['materia.carrera', 'cargaAcademica.profesor']);
         return view('admin.grupos.show', compact('grupo'));
     }
 
     public function edit(Grupo $grupo)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $materias = Materia::with('carrera')->orderBy('nombre')->get();
+$materias = Materia::with('carrera')->orderBy('nombre')->get();
         return view('admin.grupos.edit', compact('grupo', 'materias'));
     }
 
     public function update(Request $request, Grupo $grupo)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $request->validate([
+$request->validate([
             'identificador' => 'required|string|max:10',
             'materia_id' => 'required|exists:materias,id',
             'capacidad_maxima' => 'required|integer|min:1',
@@ -110,11 +88,7 @@ class GrupoController extends Controller
 
     public function destroy(Grupo $grupo)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $grupo->delete();
+$grupo->delete();
 
         return redirect()->route('admin.grupos.index')
             ->with('success', 'Grupo eliminado exitosamente.');

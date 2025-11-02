@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generador de Iconos PWA</title>
+</head>
+<body>
+    <canvas id="canvas" width="512" height="512" style="border: 1px solid #ccc;"></canvas>
+    <br><br>
+    <button onclick="generateIcon(72)">72x72</button>
+    <button onclick="generateIcon(96)">96x96</button>
+    <button onclick="generateIcon(128)">128x128</button>
+    <button onclick="generateIcon(144)">144x144</button>
+    <button onclick="generateIcon(152)">152x152</button>
+    <button onclick="generateIcon(192)">192x192</button>
+    <button onclick="generateIcon(384)">384x384</button>
+    <button onclick="generateIcon(512)">512x512</button>
+
+    <script>
+        function generateIcon(size) {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Limpiar canvas
+            ctx.clearRect(0, 0, 512, 512);
+            
+            // Fondo azul
+            ctx.fillStyle = '#007bff';
+            ctx.fillRect(0, 0, 512, 512);
+            
+            // Texto SGU
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 120px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('SGU', 256, 200);
+            
+            // Subtítulo
+            ctx.font = 'bold 40px Arial';
+            ctx.fillText('Sistema de', 256, 280);
+            ctx.fillText('Gestión', 256, 320);
+            ctx.fillText('Universitaria', 256, 360);
+            
+            // Crear imagen redimensionada
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = size;
+            tempCanvas.height = size;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(canvas, 0, 0, size, size);
+            
+            // Descargar
+            const link = document.createElement('a');
+            link.download = `icon-${size}x${size}.png`;
+            link.href = tempCanvas.toDataURL();
+            link.click();
+        }
+        
+        // Generar icono por defecto
+        generateIcon(192);
+    </script>
+</body>
+</html>

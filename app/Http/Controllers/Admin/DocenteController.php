@@ -17,31 +17,20 @@ class DocenteController extends Controller
     // CU-01: Mostrar lista de docentes
     public function index()
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $docentes = Profesor::orderBy('codigo_docente')->get();
+$docentes = Profesor::orderBy('codigo_docente')->get();
         return view('admin.docentes.index', compact('docentes'));
     }
 
     // CU-01: Mostrar formulario de registro
     public function create()
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        return view('admin.docentes.create');
+return view('admin.docentes.create');
     }
 
     // CU-01: Registrar nuevo docente
     public function store(Request $request)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        $request->validate([
+$request->validate([
             'codigo_docente' => 'required|string|max:20|unique:profesores,codigo_docente',
             'nombre' => 'required|string|max:255',
             'apellido' => 'required|string|max:255',
@@ -82,20 +71,13 @@ class DocenteController extends Controller
     // CU-02: Mostrar formulario de edición
     public function edit(Profesor $docente)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        return view('admin.docentes.edit', compact('docente'));
+return view('admin.docentes.edit', compact('docente'));
     }
 
     // CU-02: Actualizar datos del docente
     public function update(Request $request, Profesor $docente)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        $request->validate([
+$request->validate([
             'codigo_docente' => 'required|string|max:20|unique:profesores,codigo_docente,' . $docente->id,
             'nombre' => 'required|string|max:255',
             'apellido' => 'required|string|max:255',
@@ -132,10 +114,7 @@ class DocenteController extends Controller
     // CU-03: Desactivar docente (desactivación lógica)
     public function destroy(Profesor $docente)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        try {
+try {
             $docente->desactivar();
             
             return redirect()->route('admin.docentes.index')
@@ -148,10 +127,7 @@ class DocenteController extends Controller
     // Activar docente
     public function activate(Profesor $docente)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        try {
+try {
             $docente->activar();
             
             return redirect()->route('admin.docentes.index')
@@ -164,10 +140,7 @@ class DocenteController extends Controller
     // Búsqueda de docentes
     public function search(Request $request)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        $query = $request->get('q');
+$query = $request->get('q');
         
         $docentes = Profesor::where('codigo_docente', 'LIKE', "%{$query}%")
             ->orWhere('nombre', 'LIKE', "%{$query}%")

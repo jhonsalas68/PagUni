@@ -11,31 +11,19 @@ class MateriaController extends Controller
 {
     public function index()
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $materias = Materia::with('carrera.facultad')->orderBy('codigo')->get();
+$materias = Materia::with('carrera.facultad')->orderBy('codigo')->get();
         return view('admin.materias.index', compact('materias'));
     }
 
     public function create()
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $carreras = Carrera::with('facultad')->orderBy('nombre')->get();
+$carreras = Carrera::with('facultad')->orderBy('nombre')->get();
         return view('admin.materias.create', compact('carreras'));
     }
 
     public function store(Request $request)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $request->validate([
+$request->validate([
             'codigo' => 'required|string|max:10|unique:materias,codigo',
             'nombre' => 'required|string|max:255',
             'carrera_id' => 'required|exists:carreras,id',
@@ -54,31 +42,19 @@ class MateriaController extends Controller
 
     public function show(Materia $materia)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $materia->load('carrera.facultad');
+$materia->load('carrera.facultad');
         return view('admin.materias.show', compact('materia'));
     }
 
     public function edit(Materia $materia)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $carreras = Carrera::with('facultad')->orderBy('nombre')->get();
+$carreras = Carrera::with('facultad')->orderBy('nombre')->get();
         return view('admin.materias.edit', compact('materia', 'carreras'));
     }
 
     public function update(Request $request, Materia $materia)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $request->validate([
+$request->validate([
             'codigo' => 'required|string|max:10|unique:materias,codigo,' . $materia->id,
             'nombre' => 'required|string|max:255',
             'carrera_id' => 'required|exists:carreras,id',
@@ -97,11 +73,7 @@ class MateriaController extends Controller
 
     public function destroy(Materia $materia)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $materia->delete();
+$materia->delete();
 
         return redirect()->route('admin.materias.index')
             ->with('success', 'Materia eliminada exitosamente.');

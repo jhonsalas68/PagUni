@@ -12,31 +12,19 @@ class EstudianteController extends Controller
 {
     public function index()
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $estudiantes = Estudiante::with('carrera.facultad')->orderBy('codigo_estudiante')->get();
+$estudiantes = Estudiante::with('carrera.facultad')->orderBy('codigo_estudiante')->get();
         return view('admin.estudiantes.index', compact('estudiantes'));
     }
 
     public function create()
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $carreras = Carrera::with('facultad')->orderBy('nombre')->get();
+$carreras = Carrera::with('facultad')->orderBy('nombre')->get();
         return view('admin.estudiantes.create', compact('carreras'));
     }
 
     public function store(Request $request)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $request->validate([
+$request->validate([
             'codigo_estudiante' => 'required|string|max:15|unique:estudiantes,codigo_estudiante',
             'nombre' => 'required|string|max:100',
             'apellido' => 'required|string|max:100',
@@ -62,31 +50,19 @@ class EstudianteController extends Controller
 
     public function show(Estudiante $estudiante)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $estudiante->load('carrera.facultad');
+$estudiante->load('carrera.facultad');
         return view('admin.estudiantes.show', compact('estudiante'));
     }
 
     public function edit(Estudiante $estudiante)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $carreras = Carrera::with('facultad')->orderBy('nombre')->get();
+$carreras = Carrera::with('facultad')->orderBy('nombre')->get();
         return view('admin.estudiantes.edit', compact('estudiante', 'carreras'));
     }
 
     public function update(Request $request, Estudiante $estudiante)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $request->validate([
+$request->validate([
             'codigo_estudiante' => 'required|string|max:15|unique:estudiantes,codigo_estudiante,' . $estudiante->id,
             'nombre' => 'required|string|max:100',
             'apellido' => 'required|string|max:100',
@@ -114,11 +90,7 @@ class EstudianteController extends Controller
 
     public function destroy(Estudiante $estudiante)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $estudiante->delete();
+$estudiante->delete();
 
         return redirect()->route('admin.estudiantes.index')
             ->with('success', 'Estudiante eliminado exitosamente.');

@@ -5,439 +5,528 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard - Sistema Universitario')</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#007bff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="SGU">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/images/icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icons/icon-32x32.png">
+    
+    <!-- CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     @yield('head')
+    
     <style>
-        /* Responsive Sidebar */
-        .sidebar {
-            min-height: 100vh;
+        /* Reset básico */
+        * {
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        /* Navbar móvil */
+        .mobile-navbar {
+            display: block;
             background: linear-gradient(135deg, #dc3545 0%, #0d6efd 100%);
+            color: white;
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .mobile-toggle {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+        }
+        
+        .mobile-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Sidebar */
+        .sidebar {
             position: fixed;
             top: 0;
             left: 0;
-            z-index: 1000;
-            width: 250px;
+            width: 280px;
+            height: 100vh;
+            background: linear-gradient(135deg, #dc3545 0%, #0d6efd 100%);
+            z-index: 1050;
             transform: translateX(-100%);
-            transition: transform 0.3s ease-in-out;
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         
         .sidebar.show {
             transform: translateX(0);
         }
         
-        @media (min-width: 768px) {
-            .sidebar {
-                position: relative;
-                transform: translateX(0);
-                width: auto;
-            }
-        }
-        
-        .sidebar .nav-link {
-            color: rgba(255,255,255,0.8);
-            padding: 0.75rem 1rem;
-            margin: 0.25rem 0;
-            border-radius: 0.5rem;
-            transition: all 0.3s;
-            white-space: nowrap;
-        }
-        
-        .sidebar .nav-link:hover,
-        .sidebar .nav-link.active {
-            color: white;
-            background-color: rgba(255,255,255,0.1);
-        }
-        
-        /* Mobile menu toggle */
-        .mobile-menu-toggle {
-            position: fixed;
-            top: 1rem;
-            left: 1rem;
-            z-index: 1001;
-            background: rgba(220, 53, 69, 0.9);
-            border: none;
-            border-radius: 0.5rem;
-            color: white;
-            padding: 0.5rem;
-            display: block;
-        }
-        
-        @media (min-width: 768px) {
-            .mobile-menu-toggle {
-                display: none;
-            }
-        }
-        
-        /* Overlay for mobile */
+        /* Overlay */
         .sidebar-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
-            display: none;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1040;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
         }
         
         .sidebar-overlay.show {
-            display: block;
+            opacity: 1;
+            visibility: visible;
         }
         
-        /* Main content responsive */
+        /* Contenido principal */
         .main-content {
-            background-color: #f8f9fa;
+            width: 100%;
             min-height: 100vh;
-            padding-top: 1rem;
-            margin-left: 0;
-            transition: margin-left 0.3s ease-in-out;
         }
         
+        .content-wrapper {
+            padding: 1rem;
+            width: 100%;
+        }
+        
+        /* Desktop */
         @media (min-width: 768px) {
+            .mobile-navbar {
+                display: none;
+            }
+            
+            .sidebar {
+                position: relative;
+                transform: translateX(0);
+                width: 280px;
+                flex-shrink: 0;
+            }
+            
             .main-content {
-                padding-top: 0;
+                flex: 1;
+            }
+            
+            .dashboard-wrapper {
+                display: flex;
+            }
+            
+            .sidebar-overlay {
+                display: none;
             }
         }
         
-        /* Cards responsive */
+        /* Navegación sidebar */
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+        }
+        
+        .sidebar .nav-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.2);
+            font-weight: 600;
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 0.75rem;
+            width: 1.25rem;
+            text-align: center;
+        }
+        
+        /* Logout button styling */
+        .sidebar .nav-link.logout-btn {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            border: none;
+            background: transparent;
+            width: calc(100% - 1rem);
+            text-align: left;
+            cursor: pointer;
+        }
+        
+        .sidebar .nav-link.logout-btn:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Logo */
+        .logo-uagrm-sidebar {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .logo-top {
+            font-size: 14px;
+            line-height: 1;
+        }
+        
+        .logo-bottom {
+            font-size: 12px;
+            line-height: 1;
+        }
+        
+        /* Tablas responsivas */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 0.5rem;
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+        }
+        
+        .table-responsive::-webkit-scrollbar {
+            height: 8px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        
+        /* Cards */
         .card {
             border: none;
-            border-radius: 15px;
             box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border-radius: 0.5rem;
             margin-bottom: 1.5rem;
         }
         
-        /* Responsive table wrapper */
-        .table-responsive {
-            border-radius: 0.5rem;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        }
-        
-        /* Responsive buttons */
-        .btn-group-responsive {
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
-        }
-        
-        @media (min-width: 576px) {
-            .btn-group-responsive {
-                flex-direction: row;
-            }
-        }
-        
-        /* Responsive form controls */
-        .form-control, .form-select {
-            margin-bottom: 0.5rem;
-        }
-        
-        @media (min-width: 576px) {
-            .form-control, .form-select {
-                margin-bottom: 0;
-            }
-        }
-        
-        /* Utility classes */
-        .border-left-primary {
-            border-left: 0.25rem solid #4e73df !important;
-        }
-        .border-left-success {
-            border-left: 0.25rem solid #1cc88a !important;
-        }
-        .border-left-info {
-            border-left: 0.25rem solid #36b9cc !important;
-        }
-        .border-left-warning {
-            border-left: 0.25rem solid #f6c23e !important;
-        }
-        
-        /* Logo responsive */
-        .logo-uagrm-sidebar {
-            font-family: 'Arial Black', Arial, sans-serif;
-            font-weight: 900;
-            line-height: 0.8;
-        }
-        
-        .logo-uagrm-sidebar .logo-top,
-        .logo-uagrm-sidebar .logo-bottom {
-            font-size: 1.5rem;
-            color: white;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        @media (min-width: 576px) {
-            .logo-uagrm-sidebar .logo-top,
-            .logo-uagrm-sidebar .logo-bottom {
-                font-size: 1.8rem;
-            }
-        }
-        
-        /* Info boxes responsive */
-        .info-box {
-            display: flex;
-            align-items: center;
-            padding: 1rem;
-            background: white;
-            border-radius: 0.5rem;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-            margin-bottom: 1rem;
-        }
-        
-        .info-box-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            margin-right: 1rem;
-            flex-shrink: 0;
-        }
-        
-        .info-box-content {
-            flex: 1;
-            min-width: 0;
-        }
-        
-        .info-box-text {
-            display: block;
-            font-size: 0.875rem;
-            color: #6c757d;
-            margin-bottom: 0.25rem;
-        }
-        
-        .info-box-number {
-            display: block;
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #495057;
-        }
-        
-        /* Mobile text adjustments */
-        @media (max-width: 767px) {
-            .card-title {
-                font-size: 1.1rem;
+        /* Touch friendly */
+        @media (hover: none) and (pointer: coarse) {
+            .sidebar .nav-link {
+                padding: 1rem;
+                margin: 0.125rem 0.5rem;
             }
             
             .btn {
-                font-size: 0.875rem;
-                padding: 0.5rem 0.75rem;
+                padding: 0.75rem 1rem;
+                min-height: 44px;
             }
             
-            .table {
-                font-size: 0.875rem;
-            }
-            
-            .badge {
-                font-size: 0.75rem;
+            .form-control, .form-select {
+                padding: 0.75rem;
+                min-height: 44px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Mobile menu toggle -->
-    <button class="mobile-menu-toggle d-md-none" id="mobileMenuToggle">
-        <i class="fas fa-bars"></i>
-    </button>
+    <!-- Navbar móvil -->
+    <nav class="mobile-navbar d-md-none">
+        <div class="d-flex justify-content-between align-items-center">
+            <button class="mobile-toggle" id="mobileToggle" type="button">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a class="navbar-brand text-white text-decoration-none" href="#">
+                <strong>SGU</strong>
+            </a>
+            <div class="text-end">
+                <small class="d-block">{{ session('user_name') }}</small>
+                <span class="badge bg-light text-dark">{{ ucfirst(session('user_type')) }}</span>
+            </div>
+        </div>
+    </nav>
     
-    <!-- Sidebar overlay for mobile -->
+    <!-- Overlay -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     
-    <div class="container-fluid p-0">
-        <div class="row g-0">
-            <!-- Sidebar -->
-            <nav class="col-md-3 col-lg-2 sidebar" id="sidebar">
-                <div class="position-sticky pt-3">
-                    <!-- Close button for mobile -->
-                    <div class="d-md-none text-end p-2">
-                        <button class="btn btn-link text-white" id="closeSidebar">
-                            <i class="fas fa-times"></i>
-                        </button>
+    <!-- Wrapper -->
+    <div class="dashboard-wrapper">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="position-sticky pt-3">
+                <div class="text-center mb-4">
+                    <div class="logo-uagrm-sidebar mb-2">
+                        <div class="logo-top">UA</div>
+                        <div class="logo-bottom">GRM</div>
                     </div>
-                    
-                    <div class="text-center mb-4">
-                        <div class="logo-uagrm-sidebar mb-2">
-                            <div class="logo-top">UA</div>
-                            <div class="logo-bottom">GRM</div>
-                        </div>
-                        <h6 class="text-white mb-1 d-none d-sm-block">Sistema Académico</h6>
-                        <h6 class="text-white mb-1 d-sm-none">Sistema</h6>
-                        <small class="text-white-50 d-block">{{ session('user_name') }}</small>
-                        <span class="badge bg-light text-dark mt-1">{{ ucfirst(session('user_type')) }}</span>
-                    </div>
-                    
-                    <ul class="nav flex-column">
-                        @if(session('user_type') == 'administrador')
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">
-                                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('admin.docentes.*') ? 'active' : '' }}" href="{{ route('admin.docentes.index') }}">
-                                    <i class="fas fa-chalkboard-teacher"></i> Gestión de Docentes
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('admin.facultades.*') ? 'active' : '' }}" href="{{ route('admin.facultades.index') }}">
-                                    <i class="fas fa-building"></i> Facultades
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('admin.carreras.*') ? 'active' : '' }}" href="{{ route('admin.carreras.index') }}">
-                                    <i class="fas fa-graduation-cap"></i> Carreras
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('admin.materias.*') ? 'active' : '' }}" href="{{ route('admin.materias.index') }}">
-                                    <i class="fas fa-book"></i> Materias
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('admin.grupos.*') ? 'active' : '' }}" href="{{ route('admin.grupos.index') }}">
-                                    <i class="fas fa-users"></i> Grupos
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('admin.cargas-academicas.*') ? 'active' : '' }}" href="{{ route('admin.cargas-academicas.index') }}">
-                                    <i class="fas fa-chalkboard-teacher"></i> Cargas Académicas
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('admin.estudiantes.*') ? 'active' : '' }}" href="{{ route('admin.estudiantes.index') }}">
-                                    <i class="fas fa-user-graduate"></i> Estudiantes
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('admin.aulas.*') ? 'active' : '' }}" href="{{ route('admin.aulas.index') }}">
-                                    <i class="fas fa-door-closed"></i> Aulas
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('admin.horarios.*') ? 'active' : '' }}" href="{{ route('admin.horarios.index') }}">
-                                    <i class="fas fa-calendar-alt"></i> Horarios
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('admin.feriados.*') ? 'active' : '' }}" href="{{ route('admin.feriados.index') }}">
-                                    <i class="fas fa-calendar-times"></i> Feriados
-                                </a>
-                            </li>
-                        @elseif(session('user_type') == 'profesor')
-                            <li class="nav-item">
-                                <a class="nav-link active" href="{{ route('profesor.dashboard') }}">
-                                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="#">
-                                    <i class="fas fa-chalkboard"></i> Mis Clases
-                                </a>
-                            </li>
-                        @elseif(session('user_type') == 'estudiante')
-                            <li class="nav-item">
-                                <a class="nav-link active" href="{{ route('estudiante.dashboard') }}">
-                                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="#">
-                                    <i class="fas fa-chart-line"></i> Mis Notas
-                                </a>
-                            </li>
-                        @endif
-                        
-                        <li class="nav-item mt-3">
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button type="submit" class="nav-link btn btn-link text-start w-100 text-white-50">
-                                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                                </button>
-                            </form>
+                    <h6 class="text-white mb-1">Sistema Académico</h6>
+                    <small class="text-white-50 d-block">{{ session('user_name') }}</small>
+                    <span class="badge bg-light text-dark mt-1">{{ ucfirst(session('user_type')) }}</span>
+                </div>
+                
+                <ul class="nav flex-column">
+                    @if(session('user_type') == 'administrador')
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
                         </li>
-                    </ul>
-                </div>
-            </nav>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.docentes.*') ? 'active' : '' }}" href="{{ route('admin.docentes.index') }}">
+                                <i class="fas fa-chalkboard-teacher"></i> Docentes
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.facultades.*') ? 'active' : '' }}" href="{{ route('admin.facultades.index') }}">
+                                <i class="fas fa-building"></i> Facultades
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.carreras.*') ? 'active' : '' }}" href="{{ route('admin.carreras.index') }}">
+                                <i class="fas fa-graduation-cap"></i> Carreras
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.materias.*') ? 'active' : '' }}" href="{{ route('admin.materias.index') }}">
+                                <i class="fas fa-book"></i> Materias
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.grupos.*') ? 'active' : '' }}" href="{{ route('admin.grupos.index') }}">
+                                <i class="fas fa-users"></i> Grupos
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.cargas-academicas.*') ? 'active' : '' }}" href="{{ route('admin.cargas-academicas.index') }}">
+                                <i class="fas fa-chalkboard-teacher"></i> Cargas Académicas
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.estudiantes.*') ? 'active' : '' }}" href="{{ route('admin.estudiantes.index') }}">
+                                <i class="fas fa-user-graduate"></i> Estudiantes
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.horarios.*') ? 'active' : '' }}" href="{{ route('admin.horarios.index') }}">
+                                <i class="fas fa-calendar-alt"></i> Horarios
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.aulas.*') ? 'active' : '' }}" href="{{ route('admin.aulas.index') }}">
+                                <i class="fas fa-door-closed"></i> Aulas
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.feriados.*') ? 'active' : '' }}" href="{{ route('admin.feriados.index') }}">
+                                <i class="fas fa-calendar-times"></i> Feriados
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('reportes.*') ? 'active' : '' }}" href="{{ route('reportes.index') }}">
+                                <i class="fas fa-chart-bar"></i> Reportes
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.panel-asistencia') ? 'active' : '' }}" href="{{ route('admin.panel-asistencia') }}">
+                                <i class="fas fa-tv"></i> Panel Asistencia
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('consulta.aulas.*') ? 'active' : '' }}" href="{{ route('consulta.aulas.index') }}">
+                                <i class="fas fa-search"></i> Consultar Aulas
+                            </a>
+                        </li>
+                    @elseif(session('user_type') == 'profesor')
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('profesor.dashboard') ? 'active' : '' }}" href="{{ route('profesor.dashboard') }}">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('profesor.mi-horario') ? 'active' : '' }}" href="{{ route('profesor.mi-horario') }}">
+                                <i class="fas fa-calendar"></i> Mi Horario
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('profesor.historial-asistencias') ? 'active' : '' }}" href="{{ route('profesor.historial-asistencias') }}">
+                                <i class="fas fa-history"></i> Historial Asistencias
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('reportes.*') ? 'active' : '' }}" href="{{ route('reportes.index') }}">
+                                <i class="fas fa-chart-bar"></i> Reportes
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('consulta.aulas.*') ? 'active' : '' }}" href="{{ route('consulta.aulas.index') }}">
+                                <i class="fas fa-search"></i> Consultar Aulas
+                            </a>
+                        </li>
+                    @elseif(session('user_type') == 'estudiante')
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('estudiante.dashboard') ? 'active' : '' }}" href="{{ route('estudiante.dashboard') }}">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('consulta.aulas.*') ? 'active' : '' }}" href="{{ route('consulta.aulas.index') }}">
+                                <i class="fas fa-search"></i> Consultar Aulas
+                            </a>
+                        </li>
+                    @endif
+                    
+                    <li class="nav-item mt-3">
+                        <form method="POST" action="{{ route('logout') }}" class="d-inline w-100">
+                            @csrf
+                            <button type="submit" class="nav-link logout-btn text-white-50">
+                                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </nav>
 
-            <!-- Main content -->
-            <main class="col-md-9 ms-sm-auto col-lg-10 main-content">
-                <div class="container-fluid px-2 px-md-4">
-                    @yield('content')
-                </div>
-            </main>
-        </div>
+        <!-- Contenido principal -->
+        <main class="main-content">
+            <div class="content-wrapper">
+                @yield('content')
+            </div>
+        </main>
     </div>
 
+    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script>
-        // Verificar que jQuery esté disponible
-        $(document).ready(function() {
-            console.log('✅ jQuery cargado correctamente');
-        });
+        // Variables
+        let sidebarOpen = false;
         
-        // Debug global para horarios
-        window.debugHorarios = function() {
-            console.log('🔍 Debug de elementos de horarios:');
-            console.log('- Botón verificar:', document.getElementById('btn-verificar-cambios'));
-            console.log('- Botón guardar:', document.getElementById('btn-guardar-cambios'));
-            console.log('- Panel validación:', document.getElementById('panel-validacion-cu12'));
-            console.log('- Formulario:', document.getElementById('editarHorarioForm'));
-            console.log('- Campo aula:', document.getElementById('aula_id'));
-            console.log('- Campo día:', document.getElementById('dia_semana'));
-        };
-    </script>
-    <script>
-        // Mobile menu functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        // Funciones del sidebar
+        function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
-            const sidebarOverlay = document.getElementById('sidebarOverlay');
-            const closeSidebar = document.getElementById('closeSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
             
-            function openSidebar() {
-                sidebar.classList.add('show');
-                sidebarOverlay.classList.add('show');
-                document.body.style.overflow = 'hidden';
-            }
+            if (!sidebar || !overlay) return;
             
-            function closeSidebarFunc() {
+            if (sidebarOpen) {
                 sidebar.classList.remove('show');
-                sidebarOverlay.classList.remove('show');
+                overlay.classList.remove('show');
                 document.body.style.overflow = '';
+                sidebarOpen = false;
+            } else {
+                sidebar.classList.add('show');
+                overlay.classList.add('show');
+                document.body.style.overflow = 'hidden';
+                sidebarOpen = true;
+            }
+        }
+        
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (sidebar && overlay) {
+                sidebar.classList.remove('show');
+                overlay.classList.remove('show');
+                document.body.style.overflow = '';
+                sidebarOpen = false;
+            }
+        }
+        
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileToggle = document.getElementById('mobileToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+            const sidebar = document.getElementById('sidebar');
+            
+            // Click en botón móvil
+            if (mobileToggle) {
+                mobileToggle.addEventListener('click', toggleSidebar);
             }
             
-            if (mobileMenuToggle) {
-                mobileMenuToggle.addEventListener('click', openSidebar);
+            // Click en overlay
+            if (overlay) {
+                overlay.addEventListener('click', closeSidebar);
             }
             
-            if (closeSidebar) {
-                closeSidebar.addEventListener('click', closeSidebarFunc);
-            }
-            
-            if (sidebarOverlay) {
-                sidebarOverlay.addEventListener('click', closeSidebarFunc);
-            }
-            
-            // Close sidebar when clicking on nav links on mobile
-            const navLinks = sidebar.querySelectorAll('.nav-link');
-            navLinks.forEach(link => {
-                link.addEventListener('click', function() {
-                    if (window.innerWidth < 768) {
-                        closeSidebarFunc();
-                    }
-                });
+            // Cerrar con Escape
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && sidebarOpen) {
+                    closeSidebar();
+                }
             });
             
-            // Handle window resize
+            // Auto-cerrar en enlaces móviles
+            if (sidebar) {
+                const navLinks = sidebar.querySelectorAll('.nav-link');
+                navLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        if (window.innerWidth < 768) {
+                            setTimeout(closeSidebar, 100);
+                        }
+                    });
+                });
+            }
+            
+            // Responsive
             window.addEventListener('resize', function() {
-                if (window.innerWidth >= 768) {
-                    closeSidebarFunc();
+                if (window.innerWidth >= 768 && sidebarOpen) {
+                    closeSidebar();
                 }
             });
         });
+        
+        // PWA Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('SW registrado:', registration.scope);
+                    })
+                    .catch(function(error) {
+                        console.log('SW error:', error);
+                    });
+            });
+        }
     </script>
+    
     @yield('scripts')
 </body>
 </html>

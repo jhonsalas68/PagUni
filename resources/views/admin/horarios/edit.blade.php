@@ -1,4 +1,4 @@
-@extends('layouts.dashboard')
+<!--  -->@extends('layouts.dashboard')
 
 @section('title', 'Editar Horario')
 
@@ -9,23 +9,13 @@
 @section('content')
 <div class="row">
     <div class="col-12">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 pb-3 border-bottom">
-            <h1 class="h2 mb-2 mb-md-0">
-                <i class="fas fa-edit"></i> 
-                <span class="d-none d-sm-inline">CU-12: Modificar/Reasignar Horario</span>
-                <span class="d-sm-none">CU-12: Editar</span>
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+            <h1 class="h2 mb-0">
+                <i class="fas fa-edit"></i> Editar Horario
             </h1>
-            <div class="btn-group-responsive">
-                <button type="button" class="btn btn-info" id="btn-sugerir-alternativas">
-                    <i class="fas fa-lightbulb"></i> 
-                    <span class="d-none d-sm-inline">Sugerir Alternativas</span>
-                    <span class="d-sm-none">Sugerencias</span>
-                </button>
-                <a href="{{ route('admin.horarios.index') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> 
-                    <span class="d-none d-sm-inline">Volver</span>
-                </a>
-            </div>
+            <a href="{{ route('admin.horarios.index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
         </div>
     </div>
 </div>
@@ -42,7 +32,7 @@
     <div class="col-12">
         <div class="card border-primary">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="fas fa-calendar-alt"></i> CU-12: Modificación de Carga Académica Multiregistro</h6>
+                <h6 class="mb-0"><i class="fas fa-calendar-alt"></i> Información de la Materia</h6>
                 <span class="badge bg-light text-dark">
                     @php
                         $horariosMateria = \App\Models\Horario::where('carga_academica_id', $horario->carga_academica_id)
@@ -373,7 +363,7 @@
                 </div>
             </div>
 
-            <!-- CU-12: Configuración de Múltiples Días -->
+            <!-- Configuración de Múltiples Días -->
             <div class="card border-info mt-4" id="seccion-multiples-dias">
                 <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
                     <h6 class="mb-0"><i class="fas fa-calendar-plus"></i> Configuración de Múltiples Días por Semana</h6>
@@ -426,16 +416,16 @@
                 </div>
             </div>
 
-            <!-- CU-12: Botones de Validación y Guardado -->
+            <!-- Botones de Validación y Guardado -->
             <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                 <a href="{{ route('admin.horarios.index') }}" class="btn btn-secondary me-md-2">Cancelar</a>
                 
-                <!-- Paso 1: Verificar Cambios (CU-11 Validación) -->
+                <!-- Verificar Cambios -->
                 <button type="button" class="btn btn-warning me-md-2" id="btn-verificar-cambios" onclick="verificarCambios()">
                     <i class="fas fa-search"></i> Verificar Cambios
                 </button>
                 
-                <!-- Paso 2: Guardar (Solo habilitado después de verificación exitosa) -->
+                <!-- Guardar Cambios -->
                 <button type="submit" class="btn btn-success" id="btn-guardar-cambios" disabled>
                     <i class="fas fa-save"></i> Guardar Cambios
                 </button>
@@ -657,9 +647,9 @@
 
 <script>
 // Función simple para verificar cambios
-// CU-12: Función de Verificación de Cambios Completa
+// Función de Verificación de Cambios
 function verificarCambios() {
-    console.log('🔍 CU-12: Iniciando verificación de cambios...');
+    console.log('🔍 Iniciando verificación de cambios...');
     
     // Validar configuración de múltiples días primero
     if (!validarConfiguracionMultipleDias()) {
@@ -830,7 +820,7 @@ function verificarCambios() {
         
         if (data.disponible) {
             // Sin conflictos - Permitir guardar
-            mostrarResultadoCU12('success', 'Validación Exitosa: Sin Conflictos', 
+            mostrarResultadoValidacion('success', 'Validación Exitosa: Sin Conflictos', 
                 `La nueva asignación está completamente libre.<br>
                 <strong>Nueva Tripleta Validada:</strong><br>
                 • Docente: ${data.mensaje || 'Disponible'}<br>
@@ -866,7 +856,7 @@ function verificarCambios() {
             
             const mensajeFinal = mensajesError.length > 0 ? mensajesError.join('<br>') : data.mensaje;
             
-            mostrarResultadoCU12('error', `Error: Conflicto de ${tipoConflicto}`, 
+            mostrarResultadoValidacion('error', `Error: Conflicto de ${tipoConflicto}`, 
                 `${mensajeFinal}<br><br>
                 <strong>💡 Solución:</strong> Ajuste la hora o elija otro recurso.`,
                 data
@@ -885,13 +875,13 @@ function verificarCambios() {
     })
     .catch(error => {
         console.error('❌ Error en CU-11:', error);
-        mostrarResultadoCU12('error', 'Error de Validación', 
+        mostrarResultadoValidacion('error', 'Error de Validación', 
             `Error al conectar con el servidor: ${error.message}`);
     });
 }
 
-// CU-12: Función para mostrar resultados detallados de validación
-function mostrarResultadoCU12(tipo, titulo, mensaje, data = null) {
+// Función para mostrar resultados detallados de validación
+function mostrarResultadoValidacion(tipo, titulo, mensaje, data = null) {
     const panel = document.getElementById('panel-validacion-cu12');
     const card = document.getElementById('card-validacion');
     const header = document.getElementById('header-validacion');

@@ -16,11 +16,7 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        // Obtener estadísticas reales de la base de datos
+// Obtener estadísticas reales de la base de datos
         $stats = [
             'facultades' => Facultad::count(),
             'carreras' => Carrera::count(),

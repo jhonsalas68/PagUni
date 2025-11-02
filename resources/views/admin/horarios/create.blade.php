@@ -13,11 +13,22 @@
             <h1 class="h2 mb-2 mb-md-0">
                 <span class="d-none d-sm-inline">Nuevo Horario</span>
                 <span class="d-sm-none">Nuevo</span>
+                @if(isset($materiaId))
+                    <small class="text-muted">- Para materia específica</small>
+                @endif
             </h1>
-            <a href="{{ route('admin.horarios.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> 
-                <span class="d-none d-sm-inline">Volver</span>
-            </a>
+            <div class="btn-group">
+                <a href="{{ route('admin.horarios.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 
+                    <span class="d-none d-sm-inline">Volver</span>
+                </a>
+                @if(isset($materiaId))
+                    <a href="{{ route('admin.materias.index') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-book"></i> 
+                        <span class="d-none d-sm-inline">Materias</span>
+                    </a>
+                @endif
+            </div>
         </div>
     </div>
 </div>
@@ -29,6 +40,34 @@
         </div>
     @endif
 
+    @if(isset($materiaId))
+        @php
+            $cargasMateria = $cargasAcademicas->filter(function($carga) use ($materiaId) {
+                return $carga->grupo && $carga->grupo->materia_id == $materiaId;
+            });
+        @endphp
+        
+        @if($cargasMateria->isEmpty())
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>¡Atención!</strong> No hay cargas académicas (profesor asignado) para esta materia. 
+                <div class="mt-2">
+                    <a href="{{ route('admin.grupos.create', ['materia_id' => $materiaId]) }}" class="btn btn-sm btn-warning me-2">
+                        <i class="fas fa-users"></i> 1. Crear Grupo
+                    </a>
+                    <a href="{{ route('admin.cargas-academicas.create', ['materia_id' => $materiaId]) }}" class="btn btn-sm btn-success">
+                        <i class="fas fa-chalkboard-teacher"></i> 2. Asignar Profesor
+                    </a>
+                </div>
+            </div>
+        @else
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                Se encontraron <strong>{{ $cargasMateria->count() }}</strong> cargas académicas para esta materia.
+            </div>
+        @endif
+    @endif
+
     <div class="card shadow">
         <div class="card-header">
             <h6 class="m-0 fw-bold text-primary">Información del Horario</h6>
@@ -37,6 +76,39 @@
             <form method="POST" action="{{ route('admin.horarios.store') }}" id="horarioForm">
                 @csrf
                 
+                <!-- Filtros -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="filtro_carrera" class="form-label">
+                                <i class="fas fa-filter"></i> Filtrar por Carrera
+                            </label>
+                            <select class="form-select" id="filtro_carrera" onchange="filtrarCargasPorCarrera()">
+                                <option value="">Todas las carreras</option>
+                                @foreach($carreras as $carrera)
+                                    <option value="{{ $carrera->id }}">
+                                        {{ $carrera->nombre }} ({{ $carrera->facultad->nombre ?? 'N/A' }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            <small class="text-muted">Filtra las materias por carrera para facilitar la búsqueda</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-info-circle"></i> Información
+                            </label>
+                            <div class="alert alert-info mb-0 py-2">
+                                <small>
+                                    <strong>Total cargas disponibles:</strong> <span id="total-cargas">{{ $cargasAcademicas->count() }}</span><br>
+                                    <strong>Cargas filtradas:</strong> <span id="cargas-filtradas">{{ $cargasAcademicas->count() }}</span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Información básica -->
                 <div class="row">
                     <div class="col-md-6">
@@ -46,7 +118,10 @@
                                     id="carga_academica_id" name="carga_academica_id" required>
                                 <option value="">Seleccionar carga académica...</option>
                                 @foreach($cargasAcademicas as $carga)
-                                    <option value="{{ $carga->id }}" {{ old('carga_academica_id') == $carga->id ? 'selected' : '' }}>
+                                    <option value="{{ $carga->id }}" 
+                                            data-carrera="{{ $carga->grupo->materia->carrera_id ?? '' }}"
+                                            {{ old('carga_academica_id') == $carga->id ? 'selected' : '' }}>
+                                        [{{ $carga->grupo->materia->carrera->nombre ?? 'N/A' }}] 
                                         {{ $carga->grupo->materia->nombre ?? 'N/A' }} - 
                                         {{ $carga->profesor->nombre_completo ?? 'N/A' }} - 
                                         Grupo {{ $carga->grupo->identificador ?? 'N/A' }}
@@ -56,6 +131,7 @@
                             @error('carga_academica_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                            <small class="text-muted">Selecciona la materia, profesor y grupo para el horario</small>
                         </div>
                     </div>
                     
@@ -846,6 +922,76 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
     });
+});
+
+// Función para filtrar cargas académicas por carrera
+function filtrarCargasPorCarrera() {
+    const filtroCarrera = document.getElementById('filtro_carrera');
+    const selectCarga = document.getElementById('carga_academica_id');
+    const carreraSeleccionada = filtroCarrera.value;
+    
+    let totalVisible = 0;
+    
+    // Iterar sobre todas las opciones del select de carga académica
+    Array.from(selectCarga.options).forEach(option => {
+        if (option.value === '') {
+            // Mantener la opción por defecto siempre visible
+            option.style.display = 'block';
+            return;
+        }
+        
+        const carreraOpcion = option.getAttribute('data-carrera');
+        
+        if (carreraSeleccionada === '' || carreraOpcion === carreraSeleccionada) {
+            option.style.display = 'block';
+            totalVisible++;
+        } else {
+            option.style.display = 'none';
+        }
+    });
+    
+    // Actualizar contadores
+    document.getElementById('cargas-filtradas').textContent = totalVisible;
+    
+    // Limpiar selección si la opción seleccionada ya no es visible
+    const opcionSeleccionada = selectCarga.options[selectCarga.selectedIndex];
+    if (opcionSeleccionada && opcionSeleccionada.style.display === 'none') {
+        selectCarga.value = '';
+    }
+    
+    // Mostrar mensaje si no hay resultados
+    if (totalVisible === 0 && carreraSeleccionada !== '') {
+        if (!document.getElementById('no-cargas-mensaje')) {
+            const mensaje = document.createElement('div');
+            mensaje.id = 'no-cargas-mensaje';
+            mensaje.className = 'alert alert-warning mt-2';
+            mensaje.innerHTML = '<i class="fas fa-exclamation-triangle"></i> No hay cargas académicas para la carrera seleccionada.';
+            selectCarga.parentNode.appendChild(mensaje);
+        }
+    } else {
+        const mensajeExistente = document.getElementById('no-cargas-mensaje');
+        if (mensajeExistente) {
+            mensajeExistente.remove();
+        }
+    }
+}
+
+// Inicializar filtro al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    // Si viene con una materia específica, intentar pre-seleccionar la carrera
+    @if(isset($materiaId))
+        const cargasMateria = @json($cargasAcademicas->filter(function($carga) use ($materiaId) {
+            return $carga->grupo && $carga->grupo->materia_id == $materiaId;
+        })->values());
+        
+        if (cargasMateria.length > 0) {
+            const carreraId = cargasMateria[0].grupo.materia.carrera_id;
+            if (carreraId) {
+                document.getElementById('filtro_carrera').value = carreraId;
+                filtrarCargasPorCarrera();
+            }
+        }
+    @endif
 });
 </script>
 

@@ -14,11 +14,7 @@ class FeriadoController extends Controller
      */
     public function index(Request $request)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $query = Feriado::query();
+$query = Feriado::query();
 
         // Filtros de búsqueda
         if ($request->filled('buscar')) {
@@ -67,11 +63,7 @@ class FeriadoController extends Controller
      */
     public function create()
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        return view('admin.feriados.create');
+return view('admin.feriados.create');
     }
 
     /**
@@ -79,11 +71,7 @@ class FeriadoController extends Controller
      */
     public function store(Request $request)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $validationRules = [
+$validationRules = [
             'fecha_inicio' => 'required|date|after_or_equal:today',
             'descripcion' => 'required|string|max:255',
             'tipo' => 'required|in:feriado,receso,asueto',
@@ -125,11 +113,7 @@ class FeriadoController extends Controller
      */
     public function show(Feriado $feriado)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        // Calcular días afectados
+// Calcular días afectados
         $diasAfectados = [];
         if ($feriado->fecha_fin) {
             $inicio = Carbon::parse($feriado->fecha_inicio);
@@ -160,11 +144,7 @@ class FeriadoController extends Controller
      */
     public function edit(Feriado $feriado)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        return view('admin.feriados.edit', compact('feriado'));
+return view('admin.feriados.edit', compact('feriado'));
     }
 
     /**
@@ -172,11 +152,7 @@ class FeriadoController extends Controller
      */
     public function update(Request $request, Feriado $feriado)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $validationRules = [
+$validationRules = [
             'fecha_inicio' => 'required|date',
             'descripcion' => 'required|string|max:255',
             'tipo' => 'required|in:feriado,receso,asueto',
@@ -219,11 +195,7 @@ class FeriadoController extends Controller
      */
     public function destroy(Feriado $feriado)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        try {
+try {
             // En lugar de eliminar, desactivamos para mantener historial
             $feriado->update(['activo' => false]);
 

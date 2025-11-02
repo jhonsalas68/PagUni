@@ -5,13 +5,33 @@
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Nueva Carga Académica</h1>
+        <h1 class="h2">
+            Nueva Carga Académica
+            @if(isset($materiaId))
+                <small class="text-muted">- Asignar profesor a materia</small>
+            @endif
+        </h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <a href="{{ route('admin.cargas-academicas.index') }}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Volver
             </a>
+            @if(isset($materiaId))
+                <a href="{{ route('admin.materias.index') }}" class="btn btn-outline-primary ms-2">
+                    <i class="fas fa-book"></i> Volver a Materias
+                </a>
+            @endif
         </div>
     </div>
+
+    @if(isset($materiaId) && $grupos->isEmpty())
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>¡Atención!</strong> No hay grupos creados para esta materia. 
+            <a href="{{ route('admin.grupos.create', ['materia_id' => $materiaId]) }}" class="btn btn-sm btn-warning ms-2">
+                <i class="fas fa-plus"></i> Crear Grupo Primero
+            </a>
+        </div>
+    @endif
 
     @if($errors->has('error'))
         <div class="alert alert-danger alert-dismissible fade show" role="alert">

@@ -12,11 +12,7 @@ class HorarioController extends Controller
 {
     public function index()
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $horarios = Horario::with(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula'])
+$horarios = Horario::with(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula'])
                           ->orderBy('dia_semana')
                           ->orderBy('hora_inicio')
                           ->get();
@@ -24,14 +20,12 @@ class HorarioController extends Controller
         return view('admin.horarios.index', compact('horarios'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $cargasAcademicas = CargaAcademica::with(['profesor', 'grupo.materia'])->get();
+        $cargasAcademicas = CargaAcademica::with(['profesor', 'grupo.materia.carrera'])->get();
         $aulas = Aula::where('estado', 'disponible')->orderBy('codigo_aula')->get();
+        $carreras = \App\Models\Carrera::with('facultad')->orderBy('nombre')->get();
+        $materiaId = $request->input('materia_id');
         
         // Obtener horarios existentes para mostrar en el formulario
         $horariosExistentes = Horario::with(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula'])
@@ -40,16 +34,12 @@ class HorarioController extends Controller
                                    ->orderBy('hora_inicio')
                                    ->get();
         
-        return view('admin.horarios.create', compact('cargasAcademicas', 'aulas', 'horariosExistentes'));
+        return view('admin.horarios.create', compact('cargasAcademicas', 'aulas', 'horariosExistentes', 'materiaId', 'carreras'));
     }
 
     public function store(Request $request)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $validationRules = [
+$validationRules = [
             'carga_academica_id' => 'required|exists:carga_academica,id',
             'dias_semana' => 'required|array|min:1',
             'dias_semana.*' => 'integer|min:1|max:7',
@@ -175,22 +165,15 @@ class HorarioController extends Controller
 
     public function show(Horario $horario)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $horario->load(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula']);
+$horario->load(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula']);
         return view('admin.horarios.show', compact('horario'));
     }
 
     public function edit(Horario $horario)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $cargasAcademicas = CargaAcademica::with(['profesor', 'grupo.materia'])->get();
+        $cargasAcademicas = CargaAcademica::with(['profesor', 'grupo.materia.carrera'])->get();
         $aulas = Aula::where('estado', 'disponible')->orderBy('codigo_aula')->get();
+        $carreras = \App\Models\Carrera::with('facultad')->orderBy('nombre')->get();
         
         // CU-12: Obtener todos los horarios de la misma carga académica (registros múltiples)
         $horariosMateria = Horario::with(['aula'])
@@ -207,16 +190,12 @@ class HorarioController extends Controller
                                    ->orderBy('hora_inicio')
                                    ->get();
         
-        return view('admin.horarios.edit', compact('horario', 'cargasAcademicas', 'aulas', 'horariosExistentes', 'horariosMateria'));
+        return view('admin.horarios.edit', compact('horario', 'cargasAcademicas', 'aulas', 'horariosExistentes', 'horariosMateria', 'carreras'));
     }
 
     public function update(Request $request, Horario $horario)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $validationRules = [
+$validationRules = [
             'carga_academica_id' => 'required|exists:carga_academica,id',
             'hora_inicio' => 'required|date_format:H:i',
             'hora_fin' => 'required|date_format:H:i|after:hora_inicio',
@@ -397,11 +376,7 @@ class HorarioController extends Controller
 
     public function destroy(Horario $horario)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $horario->delete();
+$horario->delete();
 
         return redirect()->route('admin.horarios.index')
             ->with('success', 'Horario eliminado exitosamente.');
@@ -2722,6 +2697,5 @@ class HorarioController extends Controller
         
         return implode(' - ', $patron);
     }
-
 
 }

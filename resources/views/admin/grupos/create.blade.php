@@ -48,7 +48,8 @@
                                     id="materia_id" name="materia_id" required>
                                 <option value="">Seleccionar materia...</option>
                                 @foreach($materias as $materia)
-                                    <option value="{{ $materia->id }}" {{ old('materia_id') == $materia->id ? 'selected' : '' }}>
+                                    <option value="{{ $materia->id }}" 
+                                        {{ (old('materia_id', $materiaSeleccionada ?? '') == $materia->id) ? 'selected' : '' }}>
                                         {{ $materia->codigo }} - {{ $materia->nombre }} ({{ $materia->carrera->nombre ?? 'N/A' }})
                                     </option>
                                 @endforeach

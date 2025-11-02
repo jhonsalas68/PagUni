@@ -12,33 +12,27 @@ class CargaAcademicaController extends Controller
 {
     public function index()
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $cargasAcademicas = CargaAcademica::with(['profesor', 'grupo.materia'])->orderBy('periodo', 'desc')->get();
+$cargasAcademicas = CargaAcademica::with(['profesor', 'grupo.materia'])->orderBy('periodo', 'desc')->get();
         return view('admin.cargas-academicas.index', compact('cargasAcademicas'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
         $profesores = Profesor::where('estado', 'activo')->orderBy('nombre')->get();
         $grupos = Grupo::with('materia')->where('estado', 'activo')->orderBy('identificador')->get();
+        $materiaId = $request->input('materia_id');
         
-        return view('admin.cargas-academicas.create', compact('profesores', 'grupos'));
+        // Si se especifica una materia, filtrar grupos de esa materia
+        if ($materiaId) {
+            $grupos = $grupos->where('materia_id', $materiaId);
+        }
+        
+        return view('admin.cargas-academicas.create', compact('profesores', 'grupos', 'materiaId'));
     }
 
     public function store(Request $request)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $request->validate([
+$request->validate([
             'profesor_id' => 'required|exists:profesores,id',
             'grupo_id' => 'required|exists:grupos,id',
             'periodo' => 'required|string|max:20',
@@ -64,21 +58,13 @@ class CargaAcademicaController extends Controller
 
     public function show(CargaAcademica $cargaAcademica)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $cargaAcademica->load(['profesor', 'grupo.materia', 'horarios.aula']);
+$cargaAcademica->load(['profesor', 'grupo.materia', 'horarios.aula']);
         return view('admin.cargas-academicas.show', compact('cargaAcademica'));
     }
 
     public function edit(CargaAcademica $cargaAcademica)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-        
-        $profesores = Profesor::where('estado', 'activo')->orderBy('nombre')->get();
+$profesores = Profesor::where('estado', 'activo')->orderBy('nombre')->get();
         $grupos = Grupo::with('materia')->where('estado', 'activo')->orderBy('identificador')->get();
         
         return view('admin.cargas-academicas.edit', compact('cargaAcademica', 'profesores', 'grupos'));
@@ -86,11 +72,7 @@ class CargaAcademicaController extends Controller
 
     public function update(Request $request, CargaAcademica $cargaAcademica)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $request->validate([
+$request->validate([
             'profesor_id' => 'required|exists:profesores,id',
             'grupo_id' => 'required|exists:grupos,id',
             'periodo' => 'required|string|max:20',
@@ -117,11 +99,7 @@ class CargaAcademicaController extends Controller
 
     public function destroy(CargaAcademica $cargaAcademica)
     {
-        if (session('user_type') !== 'administrador') {
-            return redirect()->route('login')->with('error', 'Acceso denegado');
-        }
-
-        $cargaAcademica->delete();
+$cargaAcademica->delete();
 
         return redirect()->route('admin.cargas-academicas.index')
             ->with('success', 'Carga académica eliminada exitosamente.');
