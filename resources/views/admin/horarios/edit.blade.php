@@ -37,7 +37,6 @@
                     @php
                         $horariosMateria = \App\Models\Horario::where('carga_academica_id', $horario->carga_academica_id)
                             ->with(['aula'])
-                            ->orderBy('dia_semana')
                             ->orderBy('hora_inicio')
                             ->get();
                     @endphp
@@ -570,7 +569,6 @@
                             @php
                                 $todosLosHorarios = \App\Models\Horario::with(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula'])
                                     ->where('periodo_academico', $horario->periodo_academico)
-                                    ->orderBy('dia_semana')
                                     ->orderBy('hora_inicio')
                                     ->orderBy('aula_id')
                                     ->get();

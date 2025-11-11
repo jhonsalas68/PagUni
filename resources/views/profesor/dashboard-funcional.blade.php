@@ -20,6 +20,9 @@
                         <a href="{{ route('profesor.historial-asistencias') }}" class="btn btn-outline-secondary">
                             <i class="fas fa-history"></i> Historial
                         </a>
+                        <a href="{{ route('profesor.mi-horario') }}" class="btn btn-outline-info">
+                            <i class="fas fa-calendar-week"></i> Mi Horario
+                        </a>
                     </div>
                 </div>
             </div>

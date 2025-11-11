@@ -105,7 +105,7 @@ class ReporteController extends Controller
 
         // Obtener cargas académicas con el período correcto
         $query = CargaAcademica::with(['profesor', 'grupo.materia', 'horarios'])
-            ->where('periodo_academico', $periodo);
+            ->where('periodo', $periodo);
 
         if ($docenteId) {
             $query->where('profesor_id', $docenteId);
@@ -114,25 +114,52 @@ class ReporteController extends Controller
         $cargas = $query->get();
 
         $reporte = [];
+        $semanasSemestre = 16; // Duración típica de un semestre
+        
         foreach ($cargas as $carga) {
-            // Calcular horas asignadas por semana
-            $horasAsignadas = $carga->horarios->sum(function($horario) {
-                // Usar duracion_horas directamente ya que ahora está garantizado que existe
-                return $horario->duracion_horas ?? 0;
-            });
+            // Cada materia tiene 4.5 horas semanales, independiente de cuántos días tenga
+            // (3 días x 1.5 hrs = 4.5 hrs, o 2 días x 2.25 hrs = 4.5 hrs)
+            $horasSemanales = $carga->horarios->count() > 0 ? 4.5 : 0;
+            
+            // Calcular proyecciones
+            $horasMensuales = $horasSemanales * 4; // 4 semanas por mes
+            $horasSemestrales = $horasSemanales * $semanasSemestre;
 
-            // Calcular horas impartidas
-            $horasImpartidas = AsistenciaDocente::whereIn('horario_id', $carga->horarios->pluck('id'))
+            // Calcular horas impartidas basado en las asistencias
+            // Cada asistencia cuenta según la distribución de horas de la materia
+            $asistencias = AsistenciaDocente::whereIn('horario_id', $carga->horarios->pluck('id'))
                 ->whereIn('estado', ['presente', 'tardanza'])
-                ->sum('duracion_clase') / 60;
+                ->get();
+            
+            // Determinar cuántos días tiene la materia para calcular horas por clase
+            $diasPorSemana = 0;
+            if ($carga->horarios->count() > 0) {
+                $primerHorario = $carga->horarios->first();
+                $diasPorSemana = count($primerHorario->dias_semana ?? []);
+            }
+            
+            // Calcular horas por clase según días: 3 días = 1.5 hrs/clase, 2 días = 2.25 hrs/clase
+            $horasPorClase = $diasPorSemana == 3 ? 1.5 : ($diasPorSemana == 2 ? 2.25 : 1.5);
+            
+            // Contar cada asistencia como las horas correspondientes
+            $horasImpartidasTotal = $asistencias->count() * $horasPorClase;
+
+            // Calcular cumplimiento real (puede exceder 100%)
+            $cumplimientoReal = $horasSemestrales > 0 ? round(($horasImpartidasTotal / $horasSemestrales) * 100, 2) : 0;
+            
+            // Cumplimiento para pago (limitado al 100%)
+            $cumplimientoPago = min($cumplimientoReal, 100);
 
             $reporte[] = [
                 'docente' => $carga->profesor->nombre_completo ?? 'N/A',
                 'materia' => $carga->grupo->materia->nombre ?? 'N/A',
                 'grupo' => $carga->grupo->identificador ?? 'N/A',
-                'horas_asignadas' => round($horasAsignadas, 2),
-                'horas_impartidas' => round($horasImpartidas ?: 0, 2),
-                'porcentaje_cumplimiento' => $horasAsignadas > 0 ? round((($horasImpartidas ?: 0) / $horasAsignadas) * 100, 2) : 0,
+                'horas_semanales' => round($horasSemanales, 2),
+                'horas_mensuales' => round($horasMensuales, 2),
+                'horas_semestrales' => round($horasSemestrales, 2),
+                'horas_impartidas' => round($horasImpartidasTotal, 2),
+                'porcentaje_cumplimiento' => $cumplimientoReal,
+                'porcentaje_pago' => $cumplimientoPago,
             ];
         }
 

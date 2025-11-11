@@ -15,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'auth.session' => \App\Http\Middleware\AuthenticateSession::class,
         ]);
+        
+        // Usar nuestro middleware CSRF personalizado
+        $middleware->validateCsrfTokens(except: [
+            'logout',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

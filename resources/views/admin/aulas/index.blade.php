@@ -85,7 +85,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="text-center">No hay aulas registradas.</td>
+                        <td colspan="8" class="text-center">No hay aulas registradas.</td>
                         </tr>
                         @endforelse
                     </tbody>

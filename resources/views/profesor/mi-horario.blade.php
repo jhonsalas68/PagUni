@@ -47,9 +47,38 @@
                         ];
                     @endphp
 
-                    @if($horariosPorDia->count() > 0)
+                    @if($horarios->count() > 0)
+                        @php
+                            // Agrupar horarios por días (ahora dias_semana es un array JSON)
+                            $horariosPorDia = [];
+                            foreach($horarios as $horario) {
+                                $diasArray = is_array($horario->dias_semana) ? $horario->dias_semana : json_decode($horario->dias_semana, true);
+                                if ($diasArray) {
+                                    foreach($diasArray as $dia) {
+                                        $diaNumero = match(strtolower($dia)) {
+                                            'lunes' => 1,
+                                            'martes' => 2,
+                                            'miercoles', 'miércoles' => 3,
+                                            'jueves' => 4,
+                                            'viernes' => 5,
+                                            'sabado', 'sábado' => 6,
+                                            'domingo' => 7,
+                                            default => 0
+                                        };
+                                        if ($diaNumero > 0) {
+                                            if (!isset($horariosPorDia[$diaNumero])) {
+                                                $horariosPorDia[$diaNumero] = [];
+                                            }
+                                            $horariosPorDia[$diaNumero][] = $horario;
+                                        }
+                                    }
+                                }
+                            }
+                            ksort($horariosPorDia);
+                        @endphp
+                        
                         @foreach($dias as $numeroDia => $nombreDia)
-                            @if($horariosPorDia->has($numeroDia))
+                            @if(isset($horariosPorDia[$numeroDia]))
                                 <div class="mb-4">
                                     <h5 class="text-primary border-bottom pb-2">
                                         <i class="fas fa-calendar-day"></i> {{ $nombreDia }}
@@ -67,7 +96,7 @@
                                                         <div class="mb-2">
                                                             <small class="text-muted">
                                                                 <i class="fas fa-clock text-primary"></i> 
-                                                                <strong>{{ $horario->hora_inicio }} - {{ $horario->hora_fin }}</strong>
+                                                                <strong>{{ \Carbon\Carbon::parse($horario->hora_inicio)->format('H:i') }} - {{ \Carbon\Carbon::parse($horario->hora_fin)->format('H:i') }}</strong>
                                                             </small>
                                                         </div>
                                                         
@@ -93,7 +122,7 @@
 
                                                         <div class="mt-3">
                                                             <button class="btn btn-outline-warning btn-sm w-100" 
-                                                                    onclick="mostrarModalJustificar({{ $horario->id }}, '{{ $horario->cargaAcademica->grupo->materia->nombre ?? 'N/A' }}', '{{ $nombreDia }}', '{{ $horario->hora_inicio }} - {{ $horario->hora_fin }}')">
+                                                                    onclick="mostrarModalJustificar({{ $horario->id }}, '{{ $horario->cargaAcademica->grupo->materia->nombre ?? 'N/A' }}', '{{ $nombreDia }}', '{{ \Carbon\Carbon::parse($horario->hora_inicio)->format('H:i') }} - {{ \Carbon\Carbon::parse($horario->hora_fin)->format('H:i') }}')">
                                                                 <i class="fas fa-edit"></i> Justificar Falta
                                                             </button>
                                                         </div>
@@ -126,7 +155,7 @@
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Clases</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                {{ $horariosPorDia->flatten()->count() }}
+                                {{ $horarios->count() }}
                             </div>
                         </div>
                         <div class="col-auto">
@@ -144,7 +173,7 @@
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Materias</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                {{ $horariosPorDia->flatten()->pluck('cargaAcademica.grupo.materia.nombre')->unique()->count() }}
+                                {{ $horarios->pluck('cargaAcademica.grupo.materia.nombre')->unique()->count() }}
                             </div>
                         </div>
                         <div class="col-auto">
@@ -162,7 +191,7 @@
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Aulas</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                {{ $horariosPorDia->flatten()->pluck('aula.codigo_aula')->unique()->count() }}
+                                {{ $horarios->pluck('aula.codigo_aula')->unique()->count() }}
                             </div>
                         </div>
                         <div class="col-auto">
@@ -180,7 +209,17 @@
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Días Activos</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                {{ $horariosPorDia->count() }}
+                                @php
+                                    $diasUnicos = [];
+                                    foreach($horarios as $h) {
+                                        $diasArray = is_array($h->dias_semana) ? $h->dias_semana : json_decode($h->dias_semana, true);
+                                        if ($diasArray) {
+                                            $diasUnicos = array_merge($diasUnicos, $diasArray);
+                                        }
+                                    }
+                                    $diasUnicos = array_unique($diasUnicos);
+                                @endphp
+                                {{ count($diasUnicos) }}
                             </div>
                         </div>
                         <div class="col-auto">

@@ -72,6 +72,7 @@ Route::middleware(['web'])->group(function () {
         Route::resource('cargas-academicas', \App\Http\Controllers\Admin\CargaAcademicaController::class)->parameters(['cargas-academicas' => 'cargaAcademica']);
         
         // Gestión de Horarios
+        Route::get('horarios/boleta', [\App\Http\Controllers\Admin\HorarioController::class, 'boleta'])->name('horarios.boleta');
         Route::resource('horarios', \App\Http\Controllers\Admin\HorarioController::class);
         Route::post('horarios/validar-disponibilidad', [\App\Http\Controllers\Admin\HorarioController::class, 'validarDisponibilidad'])->name('horarios.validar-disponibilidad');
         Route::post('horarios/{horario}/validar-cambios-cu12', [\App\Http\Controllers\Admin\HorarioController::class, 'validarCambiosCU12'])->name('horarios.validar-cambios-cu12');

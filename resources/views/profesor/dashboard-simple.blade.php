@@ -249,4 +249,4 @@ function confirmarQRSimple() {
     });
 }
 </script>
-@endsection
+@endse

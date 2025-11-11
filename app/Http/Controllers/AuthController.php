@@ -13,7 +13,24 @@ class AuthController extends Controller
 {
     public function showLoginForm()
     {
-        return view('auth.login');
+        // Si ya hay sesión activa, redirigir al dashboard correspondiente
+        if (Session::has('user_id') && Session::has('user_type')) {
+            $userType = Session::get('user_type');
+            switch ($userType) {
+                case 'administrador':
+                    return redirect()->route('admin.dashboard');
+                case 'profesor':
+                    return redirect()->route('profesor.dashboard');
+                case 'estudiante':
+                    return redirect()->route('estudiante.dashboard');
+            }
+        }
+        
+        return response()
+            ->view('auth.login')
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     public function login(Request $request)
@@ -78,8 +95,19 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        // Limpiar toda la sesión
         Session::flush();
-        return redirect()->route('login')->with('success', 'Has cerrado sesión correctamente.');
+        
+        // Regenerar el token de sesión
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        
+        // Crear respuesta con headers anti-caché
+        return redirect()->route('login')
+            ->with('success', 'Has cerrado sesión correctamente.')
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     // Middleware helper para verificar autenticación

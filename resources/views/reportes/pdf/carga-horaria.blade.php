@@ -82,34 +82,45 @@
                 <th>Docente</th>
                 <th>Materia</th>
                 <th>Grupo</th>
-                <th>Horas Asignadas</th>
-                <th>Horas Impartidas</th>
-                <th>Cumplimiento (%)</th>
+                <th>Hrs/Sem</th>
+                <th>Hrs/Mes</th>
+                <th>Hrs/Sem</th>
+                <th>Hrs Impart.</th>
+                <th>% Real</th>
+                <th>% Pago</th>
             </tr>
         </thead>
         <tbody>
             @php
-                $totalAsignadas = 0;
+                $totalSemanales = 0;
+                $totalMensuales = 0;
+                $totalSemestrales = 0;
                 $totalImpartidas = 0;
             @endphp
             @forelse($reporte as $item)
                 @php
-                    $totalAsignadas += $item['horas_asignadas'];
+                    $totalSemanales += $item['horas_semanales'];
+                    $totalMensuales += $item['horas_mensuales'];
+                    $totalSemestrales += $item['horas_semestrales'];
                     $totalImpartidas += $item['horas_impartidas'];
-                    $porcentaje = $item['porcentaje_cumplimiento'];
-                    $clasePortentaje = $porcentaje >= 90 ? 'alto' : ($porcentaje >= 70 ? 'medio' : 'bajo');
+                    $porcentajeReal = $item['porcentaje_cumplimiento'];
+                    $porcentajePago = $item['porcentaje_pago'];
+                    $clasePortentaje = $porcentajePago >= 90 ? 'alto' : ($porcentajePago >= 70 ? 'medio' : 'bajo');
                 @endphp
                 <tr>
                     <td>{{ $item['docente'] }}</td>
                     <td>{{ $item['materia'] }}</td>
                     <td>{{ $item['grupo'] }}</td>
-                    <td class="numero">{{ $item['horas_asignadas'] }}</td>
+                    <td class="numero">{{ $item['horas_semanales'] }}</td>
+                    <td class="numero">{{ $item['horas_mensuales'] }}</td>
+                    <td class="numero">{{ $item['horas_semestrales'] }}</td>
                     <td class="numero">{{ $item['horas_impartidas'] }}</td>
-                    <td class="porcentaje {{ $clasePortentaje }}">{{ $porcentaje }}%</td>
+                    <td class="porcentaje">{{ $porcentajeReal }}%</td>
+                    <td class="porcentaje {{ $clasePortentaje }}">{{ $porcentajePago }}%</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" style="text-align: center; color: #666;">
+                    <td colspan="9" style="text-align: center; color: #666;">
                         No se encontraron datos de carga horaria para el período seleccionado
                     </td>
                 </tr>
@@ -119,11 +130,16 @@
         <tfoot>
             <tr style="background-color: #e9ecef; font-weight: bold;">
                 <td colspan="3">TOTALES</td>
-                <td class="numero">{{ round($totalAsignadas, 2) }}</td>
+                <td class="numero">{{ round($totalSemanales, 2) }}</td>
+                <td class="numero">{{ round($totalMensuales, 2) }}</td>
+                <td class="numero">{{ round($totalSemestrales, 2) }}</td>
                 <td class="numero">{{ round($totalImpartidas, 2) }}</td>
-                <td class="porcentaje">
-                    {{ $totalAsignadas > 0 ? round(($totalImpartidas / $totalAsignadas) * 100, 2) : 0 }}%
-                </td>
+                @php
+                    $cumplimientoTotalReal = $totalSemestrales > 0 ? round(($totalImpartidas / $totalSemestrales) * 100, 2) : 0;
+                    $cumplimientoTotalPago = min($cumplimientoTotalReal, 100);
+                @endphp
+                <td class="porcentaje">{{ $cumplimientoTotalReal }}%</td>
+                <td class="porcentaje">{{ $cumplimientoTotalPago }}%</td>
             </tr>
         </tfoot>
         @endif
@@ -133,16 +149,25 @@
     <div class="resumen">
         <h3>Resumen Ejecutivo</h3>
         <p><strong>Total de registros:</strong> {{ count($reporte) }}</p>
-        <p><strong>Horas totales asignadas:</strong> {{ round($totalAsignadas, 2) }} horas</p>
+        <p><strong>Horas semanales totales:</strong> {{ round($totalSemanales, 2) }} horas</p>
+        <p><strong>Horas mensuales totales:</strong> {{ round($totalMensuales, 2) }} horas</p>
+        <p><strong>Horas semestrales totales:</strong> {{ round($totalSemestrales, 2) }} horas</p>
         <p><strong>Horas totales impartidas:</strong> {{ round($totalImpartidas, 2) }} horas</p>
-        <p><strong>Porcentaje general de cumplimiento:</strong> 
-            {{ $totalAsignadas > 0 ? round(($totalImpartidas / $totalAsignadas) * 100, 2) : 0 }}%
-        </p>
+        @php
+            $cumplimientoGeneral = $totalSemestrales > 0 ? round(($totalImpartidas / $totalSemestrales) * 100, 2) : 0;
+            $cumplimientoPagoGeneral = min($cumplimientoGeneral, 100);
+        @endphp
+        <p><strong>Porcentaje general de cumplimiento real:</strong> {{ $cumplimientoGeneral }}%</p>
+        <p><strong>Porcentaje general para pago:</strong> {{ $cumplimientoPagoGeneral }}% (máx. 100%)</p>
         <p><strong>Docentes con cumplimiento ≥90%:</strong> 
-            {{ collect($reporte)->where('porcentaje_cumplimiento', '>=', 90)->count() }}
+            {{ collect($reporte)->where('porcentaje_pago', '>=', 90)->count() }}
         </p>
         <p><strong>Docentes con cumplimiento <70%:</strong> 
-            {{ collect($reporte)->where('porcentaje_cumplimiento', '<', 70)->count() }}
+            {{ collect($reporte)->where('porcentaje_pago', '<', 70)->count() }}
+        </p>
+        <p style="margin-top: 10px; font-size: 10px; color: #666;">
+            <em>Nota: El porcentaje de pago está limitado al 100% según políticas institucionales. 
+            El porcentaje real muestra el cumplimiento efectivo que puede exceder el 100%.</em>
         </p>
     </div>
     @endif

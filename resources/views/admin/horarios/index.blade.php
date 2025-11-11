@@ -7,6 +7,11 @@
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">Gestión de Horarios</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{{ route('admin.horarios.boleta') }}" class="btn btn-info">
+                    <i class="fas fa-file-alt"></i> Ver Boleta
+                </a>
+            </div>
             <a href="{{ route('admin.horarios.create') }}" class="btn btn-primary">
                 <i class="fas fa-plus"></i> Nuevo Horario
             </a>
@@ -44,31 +49,25 @@
                         <tr>
                             <td>
                                 @php
-                                    $dias = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-                                    $diasCortos = ['', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+                                    $diasMap = [
+                                        'lunes' => 'Lu',
+                                        'martes' => 'Ma',
+                                        'miercoles' => 'Mi',
+                                        'jueves' => 'Ju',
+                                        'viernes' => 'Vi',
+                                        'sabado' => 'Sa'
+                                    ];
                                     
-                                    // Obtener todos los horarios de la misma materia para mostrar el patrón completo
-                                    $horariosMateria = \App\Models\Horario::where('carga_academica_id', $horario->carga_academica_id)
-                                        ->with(['aula'])
-                                        ->orderBy('dia_semana')
-                                        ->get();
-                                    
-                                    $patronCompleto = [];
-                                    foreach($horariosMateria as $h) {
-                                        $diaTexto = $diasCortos[$h->dia_semana] ?? 'N/A';
-                                        $aulaTexto = $h->aula->codigo_aula ?? 'N/A';
-                                        if($h->aula->tipo_aula === 'laboratorio') {
-                                            $aulaTexto = 'Lab ' . str_replace(['Lab', 'LAB', 'Laboratorio'], '', $aulaTexto);
-                                        }
-                                        $patronCompleto[] = $diaTexto . ' ' . $aulaTexto;
+                                    $diasTexto = [];
+                                    foreach($horario->dias_semana as $dia) {
+                                        $diasTexto[] = $diasMap[$dia] ?? ucfirst(substr($dia, 0, 2));
                                     }
-                                    $patronTexto = implode(' - ', $patronCompleto);
+                                    $diasStr = implode(' ', $diasTexto);
+                                    $aulaTexto = $horario->aula->codigo_aula ?? 'N/A';
                                 @endphp
                                 <div>
-                                    <strong>{{ $patronTexto }}</strong>
-                                    @if($horariosMateria->count() > 1)
-                                        <br><small class="text-muted">{{ $horariosMateria->count() }} días por semana</small>
-                                    @endif
+                                    <strong>{{ $diasStr }}</strong>
+                                    <br><small class="text-muted">{{ $aulaTexto }}</small>
                                 </div>
                             </td>
                             <td>
@@ -79,7 +78,10 @@
                                 <strong>{{ $horario->cargaAcademica->grupo->materia->nombre ?? 'N/A' }}</strong>
                                 <br><small class="text-muted">{{ $horario->cargaAcademica->grupo->materia->codigo ?? '' }}</small>
                             </td>
-                            <td>{{ $horario->cargaAcademica->profesor->nombre_completo ?? 'N/A' }}</td>
+                            <td>
+                                {{ $horario->cargaAcademica->profesor->nombre ?? 'N/A' }} 
+                                {{ $horario->cargaAcademica->profesor->apellido ?? '' }}
+                            </td>
                             <td>
                                 <span class="badge bg-secondary">{{ $horario->cargaAcademica->grupo->identificador ?? 'N/A' }}</span>
                             </td>
@@ -124,7 +126,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="10" class="text-center">No hay horarios registrados.</td>
+                            <td colspan="8" class="text-center">No hay horarios registrados.</td>
                         </tr>
                         @endforelse
                     </tbody>

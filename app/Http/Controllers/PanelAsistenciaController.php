@@ -62,7 +62,7 @@ class PanelAsistenciaController extends Controller
 
         // Obtener todos los horarios del día
         $horariosDelDia = Horario::with(['cargaAcademica.grupo.materia', 'cargaAcademica.profesor', 'aula'])
-            ->where('dia_semana', $diaSemana)
+            ->whereJsonContains('dias_semana', strtolower($this->getDiaNombre($diaSemana)))
             ->orderBy('hora_inicio')
             ->get();
 
@@ -151,7 +151,7 @@ class PanelAsistenciaController extends Controller
         }
 
         $horariosDelDia = Horario::with(['cargaAcademica.grupo.materia', 'cargaAcademica.profesor', 'aula'])
-            ->where('dia_semana', $diaSemana)
+            ->whereJsonContains('dias_semana', strtolower($this->getDiaNombre($diaSemana)))
             ->orderBy('hora_inicio')
             ->get();
 
@@ -253,5 +253,23 @@ class PanelAsistenciaController extends Controller
                 'error' => 'Error al registrar justificación: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Convertir número de día a nombre
+     */
+    private function getDiaNombre($numeroDia)
+    {
+        $dias = [
+            1 => 'lunes',
+            2 => 'martes',
+            3 => 'miercoles',
+            4 => 'jueves',
+            5 => 'viernes',
+            6 => 'sabado',
+            7 => 'domingo'
+        ];
+        
+        return $dias[$numeroDia] ?? 'lunes';
     }
 }

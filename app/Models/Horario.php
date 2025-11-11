@@ -14,7 +14,7 @@ class Horario extends Model
     protected $fillable = [
         'carga_academica_id',
         'aula_id',
-        'dia_semana',
+        'dias_semana',
         'hora_inicio',
         'hora_fin',
         'duracion_horas',
@@ -25,10 +25,14 @@ class Horario extends Model
         'fecha_fin',
         'semanas_duracion',
         'configuracion_dias',
-        'usar_configuracion_por_dia'
+        'usar_configuracion_por_dia',
+        'tipo_asignacion',
+        'estado',
+        'observaciones'
     ];
 
     protected $casts = [
+        'dias_semana' => 'array',
         'es_semestral' => 'boolean',
         'fecha_inicio' => 'date',
         'fecha_fin' => 'date',
@@ -51,25 +55,95 @@ class Horario extends Model
     {
         if (!$value) return null;
         
-        // Convertir a formato H:i (ej: 08:00)
-        return Carbon::parse($value)->format('H:i');
+        // Si ya está en formato H:i, devolverlo tal cual
+        if (preg_match('/^\d{2}:\d{2}$/', $value)) {
+            return $value;
+        }
+        
+        // Si es un timestamp o datetime, convertir a formato H:i
+        try {
+            return Carbon::parse($value)->format('H:i');
+        } catch (\Exception $e) {
+            return $value;
+        }
     }
 
     public function getHoraFinAttribute($value)
     {
         if (!$value) return null;
         
-        // Convertir a formato H:i (ej: 10:00)
-        return Carbon::parse($value)->format('H:i');
+        // Si ya está en formato H:i, devolverlo tal cual
+        if (preg_match('/^\d{2}:\d{2}$/', $value)) {
+            return $value;
+        }
+        
+        // Si es un timestamp o datetime, convertir a formato H:i
+        try {
+            return Carbon::parse($value)->format('H:i');
+        } catch (\Exception $e) {
+            return $value;
+        }
     }
 
     // Accessor para descripción completa del horario
     public function getDescripcionCompletaAttribute(): string
     {
-        return ucfirst($this->dia_semana) . ' ' . 
+        $dias = $this->getDiasFormateados();
+        return $dias . ' ' . 
                Carbon::parse($this->hora_inicio)->format('H:i') . '-' . 
                Carbon::parse($this->hora_fin)->format('H:i') . ' - ' . 
                $this->aula->codigo_aula;
+    }
+
+    // Método para obtener días formateados
+    public function getDiasFormateados(): string
+    {
+        if (empty($this->dias_semana)) {
+            return 'Sin días asignados';
+        }
+
+        $diasCapitalizados = array_map(function($dia) {
+            return ucfirst($dia);
+        }, $this->dias_semana);
+
+        return implode(', ', $diasCapitalizados);
+    }
+
+    // Método para verificar si tiene un día específico
+    public function tieneDia(string $dia): bool
+    {
+        return in_array(strtolower($dia), $this->dias_semana ?? []);
+    }
+
+    // Método para agregar un día
+    public function agregarDia(string $dia): void
+    {
+        $dias = $this->dias_semana ?? [];
+        $dia = strtolower($dia);
+        
+        if (!in_array($dia, $dias)) {
+            $dias[] = $dia;
+            $this->dias_semana = $dias;
+            $this->save();
+        }
+    }
+
+    // Método para remover un día
+    public function removerDia(string $dia): void
+    {
+        $dias = $this->dias_semana ?? [];
+        $dia = strtolower($dia);
+        
+        $this->dias_semana = array_values(array_filter($dias, function($d) use ($dia) {
+            return $d !== $dia;
+        }));
+        $this->save();
+    }
+
+    // Método para obtener cantidad de días
+    public function getCantidadDias(): int
+    {
+        return count($this->dias_semana ?? []);
     }
 
     // Método para validar disponibilidad de recursos
@@ -134,13 +208,18 @@ class Horario extends Model
         return $this->es_semestral ? $this->carga_horaria_semestral : $this->duracion_horas;
     }
 
-    // Método para validar conflictos mejorado con detalles
-    public static function validarConflictos($carga_academica_id, $aula_id, $dia_semana, $hora_inicio, $hora_fin, $periodo_academico, $excluir_id = null)
+    // Método para validar conflictos mejorado con detalles (ahora soporta múltiples días)
+    public static function validarConflictos($carga_academica_id, $aula_id, $dias_semana, $hora_inicio, $hora_fin, $periodo_academico, $excluir_id = null)
     {
+        // Asegurar que dias_semana sea un array
+        if (!is_array($dias_semana)) {
+            $dias_semana = [$dias_semana];
+        }
+
         \Log::info('Iniciando validación de conflictos', [
             'carga_academica_id' => $carga_academica_id,
             'aula_id' => $aula_id,
-            'dia_semana' => $dia_semana,
+            'dias_semana' => $dias_semana,
             'hora_inicio' => $hora_inicio,
             'hora_fin' => $hora_fin,
             'periodo_academico' => $periodo_academico,
@@ -161,11 +240,16 @@ class Horario extends Model
         $horaInicioComparable = \Carbon\Carbon::createFromFormat('H:i', $hora_inicio);
         $horaFinComparable = \Carbon\Carbon::createFromFormat('H:i', $hora_fin);
 
-        // Query base más robusta para conflictos de horario
+        // Query base más robusta para conflictos de horario (ahora con múltiples días)
         $baseQuery = self::query()
             ->with(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula'])
-            ->where('dia_semana', $dia_semana)
             ->where('periodo_academico', $periodo_academico)
+            ->where(function ($q) use ($dias_semana) {
+                // Verificar si alguno de los días solicitados está en el array de días del horario
+                foreach ($dias_semana as $dia) {
+                    $q->orWhereJsonContains('dias_semana', $dia);
+                }
+            })
             ->where(function ($q) use ($hora_inicio, $hora_fin) {
                 // Verificar solapamiento real: dos horarios se solapan si uno inicia antes de que termine el otro
                 // Fórmula: (inicio1 < fin2) AND (fin1 > inicio2)
@@ -320,7 +404,16 @@ class Horario extends Model
 
     public function scopeDia($query, $dia)
     {
-        return $query->where('dia_semana', $dia);
+        return $query->whereJsonContains('dias_semana', strtolower($dia));
+    }
+
+    public function scopeDias($query, array $dias)
+    {
+        return $query->where(function($q) use ($dias) {
+            foreach ($dias as $dia) {
+                $q->orWhereJsonContains('dias_semana', strtolower($dia));
+            }
+        });
     }
 
     public function scopeSemestral($query)

@@ -34,7 +34,7 @@ class AulaConsultaController extends Controller
         // Obtener horarios del aula para el día seleccionado
         $horarios = Horario::with(['cargaAcademica.grupo.materia', 'cargaAcademica.profesor'])
             ->where('aula_id', $aulaId)
-            ->where('dia_semana', $diaSemana)
+            ->whereJsonContains('dias_semana', strtolower($this->getDiaNombre($diaSemana)))
             ->orderBy('hora_inicio')
             ->get();
 
@@ -61,7 +61,7 @@ class AulaConsultaController extends Controller
 
         $horarios = Horario::with(['cargaAcademica.grupo.materia', 'cargaAcademica.profesor'])
             ->where('aula_id', $aulaId)
-            ->where('dia_semana', $diaSemana)
+            ->whereJsonContains('dias_semana', strtolower($this->getDiaNombre($diaSemana)))
             ->orderBy('hora_inicio')
             ->get();
 
@@ -96,5 +96,23 @@ class AulaConsultaController extends Controller
             'dia_semana' => $diaSemana,
             'ocupacion' => $ocupacion,
         ]);
+    }
+
+    /**
+     * Convertir número de día a nombre
+     */
+    private function getDiaNombre($numeroDia)
+    {
+        $dias = [
+            1 => 'lunes',
+            2 => 'martes',
+            3 => 'miercoles',
+            4 => 'jueves',
+            5 => 'viernes',
+            6 => 'sabado',
+            7 => 'domingo'
+        ];
+        
+        return $dias[$numeroDia] ?? 'lunes';
     }
 }

@@ -12,8 +12,7 @@ class HorarioController extends Controller
 {
     public function index()
     {
-$horarios = Horario::with(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula'])
-                          ->orderBy('dia_semana')
+        $horarios = Horario::with(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula'])
                           ->orderBy('hora_inicio')
                           ->get();
         
@@ -30,7 +29,6 @@ $horarios = Horario::with(['cargaAcademica.profesor', 'cargaAcademica.grupo.mate
         // Obtener horarios existentes para mostrar en el formulario
         $horariosExistentes = Horario::with(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula'])
                                    ->orderBy('periodo_academico', 'desc')
-                                   ->orderBy('dia_semana')
                                    ->orderBy('hora_inicio')
                                    ->get();
         
@@ -178,7 +176,7 @@ $horario->load(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula
         // CU-12: Obtener todos los horarios de la misma carga académica (registros múltiples)
         $horariosMateria = Horario::with(['aula'])
                                  ->where('carga_academica_id', $horario->carga_academica_id)
-                                 ->orderBy('dia_semana')
+                                 ->orderBy('hora_inicio')
                                  ->orderBy('hora_inicio')
                                  ->get();
         
@@ -186,7 +184,7 @@ $horario->load(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula
         $horariosExistentes = Horario::with(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula'])
                                    ->where('carga_academica_id', '!=', $horario->carga_academica_id)
                                    ->orderBy('periodo_academico', 'desc')
-                                   ->orderBy('dia_semana')
+                                   ->orderBy('hora_inicio')
                                    ->orderBy('hora_inicio')
                                    ->get();
         
@@ -597,7 +595,7 @@ $horario->delete();
             // Obtener todos los horarios de la misma materia para contexto
             $horariosMateria = Horario::where('carga_academica_id', $horario->carga_academica_id)
                 ->with(['aula'])
-                ->orderBy('dia_semana')
+                ->orderBy('hora_inicio')
                 ->orderBy('hora_inicio')
                 ->get();
             
@@ -1075,7 +1073,7 @@ $horario->delete();
                 break;
         }
 
-        $horariosRelacionados = $query->orderBy('dia_semana')
+        $horariosRelacionados = $query->orderBy('hora_inicio')
                                      ->orderBy('hora_inicio')
                                      ->get();
 
@@ -1154,7 +1152,7 @@ $horario->delete();
             $debug['paso_2'] = 'Obteniendo horarios de la materia...';
             $horariosMateria = Horario::where('carga_academica_id', $horario->carga_academica_id)
                 ->with(['aula'])
-                ->orderBy('dia_semana')
+                ->orderBy('hora_inicio')
                 ->orderBy('hora_inicio')
                 ->get();
             $debug['horarios_materia_count'] = $horariosMateria->count();
@@ -1296,7 +1294,7 @@ $horario->delete();
             // Obtener todos los horarios de la misma materia para contexto
             $horariosMateria = Horario::where('carga_academica_id', $horario->carga_academica_id)
                 ->with(['aula'])
-                ->orderBy('dia_semana')
+                ->orderBy('hora_inicio')
                 ->orderBy('hora_inicio')
                 ->get();
             
@@ -1370,7 +1368,7 @@ $horario->delete();
             // Obtener todos los horarios de la materia para contexto
             $horariosMateria = Horario::where('carga_academica_id', $horario->carga_academica_id)
                 ->with(['aula'])
-                ->orderBy('dia_semana')
+                ->orderBy('hora_inicio')
                 ->get();
             
             $aulas = Aula::where('estado', 'disponible')
@@ -1428,7 +1426,7 @@ $horario->delete();
             // Obtener todos los horarios de la materia para contexto
             $horariosMateria = Horario::where('carga_academica_id', $horario->carga_academica_id)
                 ->with(['aula'])
-                ->orderBy('dia_semana')
+                ->orderBy('hora_inicio')
                 ->get();
             
             $diasUtilizados = $horariosMateria->pluck('dia_semana')->unique()->toArray();
@@ -2696,6 +2694,34 @@ $horario->delete();
         }
         
         return implode(' - ', $patron);
+    }
+
+    /**
+     * Mostrar boleta de horarios estilo universidad
+     */
+    public function boleta(Request $request)
+    {
+        $periodo = $request->input('periodo', '2025-1');
+        $carreraId = $request->input('carrera_id');
+        
+        $query = Horario::with([
+            'cargaAcademica.profesor',
+            'cargaAcademica.grupo.materia.carrera',
+            'aula'
+        ])
+        ->where('periodo_academico', $periodo)
+        ->where('estado', 'activo');
+        
+        if ($carreraId) {
+            $query->whereHas('cargaAcademica.grupo.materia', function($q) use ($carreraId) {
+                $q->where('carrera_id', $carreraId);
+            });
+        }
+        
+        $horarios = $query->orderBy('hora_inicio')->get();
+        $carreras = \App\Models\Carrera::with('facultad')->get();
+        
+        return view('admin.horarios.boleta', compact('horarios', 'carreras', 'periodo', 'carreraId'));
     }
 
 }

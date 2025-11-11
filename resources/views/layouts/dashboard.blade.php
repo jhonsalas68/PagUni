@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>@yield('title', 'Dashboard - Sistema Universitario')</title>
     
     <!-- PWA Meta Tags -->
@@ -166,6 +169,12 @@
         }
         
         /* Logout button styling */
+        .sidebar form {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+        }
+        
         .sidebar .nav-link.logout-btn {
             color: rgba(255, 255, 255, 0.8);
             padding: 0.75rem 1rem;
@@ -179,11 +188,24 @@
             width: calc(100% - 1rem);
             text-align: left;
             cursor: pointer;
+            font-size: 1rem;
+            font-weight: 400;
         }
         
         .sidebar .nav-link.logout-btn:hover {
             color: white;
             background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar .nav-link.logout-btn:focus {
+            outline: none;
+            box-shadow: none;
+        }
+        
+        .sidebar .nav-link.logout-btn i {
+            margin-right: 0.75rem;
+            width: 1.25rem;
+            text-align: center;
         }
         
         /* Logo */
@@ -411,9 +433,9 @@
                     @endif
                     
                     <li class="nav-item mt-3">
-                        <form method="POST" action="{{ route('logout') }}" class="d-inline w-100">
+                        <form method="POST" action="{{ route('logout') }}" id="logout-form">
                             @csrf
-                            <button type="submit" class="nav-link logout-btn text-white-50">
+                            <button type="submit" class="nav-link logout-btn">
                                 <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                             </button>
                         </form>
@@ -495,13 +517,26 @@
             
             // Auto-cerrar en enlaces móviles
             if (sidebar) {
-                const navLinks = sidebar.querySelectorAll('.nav-link');
+                const navLinks = sidebar.querySelectorAll('.nav-link:not(.logout-btn)');
                 navLinks.forEach(link => {
                     link.addEventListener('click', function() {
                         if (window.innerWidth < 768) {
                             setTimeout(closeSidebar, 100);
                         }
                     });
+                });
+            }
+            
+            // Manejar logout
+            const logoutForm = document.getElementById('logout-form');
+            if (logoutForm) {
+                logoutForm.addEventListener('submit', function(e) {
+                    // Prevenir múltiples envíos
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cerrando sesión...';
+                    }
                 });
             }
             
@@ -525,6 +560,26 @@
                     });
             });
         }
+        
+        // Prevenir acceso con botón atrás después de logout
+        window.history.pushState(null, "", window.location.href);
+        window.onpopstate = function() {
+            window.history.pushState(null, "", window.location.href);
+        };
+        
+        // Verificar sesión periódicamente
+        setInterval(function() {
+            fetch('{{ route("login") }}', {
+                method: 'HEAD',
+                cache: 'no-cache'
+            }).then(response => {
+                if (response.redirected) {
+                    window.location.href = '{{ route("login") }}';
+                }
+            }).catch(() => {
+                // Ignorar errores de red
+            });
+        }, 300000); // Verificar cada 5 minutos
     </script>
     
     @yield('scripts')

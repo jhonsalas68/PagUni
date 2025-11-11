@@ -71,8 +71,27 @@
                                                 @php
                                                     $asistencia = $asistencias->get($horario->id);
                                                     $ahora = now();
-                                                    $horaInicio = \Carbon\Carbon::createFromFormat('H:i:s', $horario->hora_inicio);
-                                                    $horaFin = \Carbon\Carbon::createFromFormat('H:i:s', $horario->hora_fin);
+                                                    
+                                                    // Intentar parsear con múltiples formatos
+                                                    try {
+                                                        $horaInicio = \Carbon\Carbon::createFromFormat('H:i', $horario->hora_inicio);
+                                                    } catch (\Exception $e) {
+                                                        try {
+                                                            $horaInicio = \Carbon\Carbon::createFromFormat('H:i:s', $horario->hora_inicio);
+                                                        } catch (\Exception $e2) {
+                                                            $horaInicio = \Carbon\Carbon::parse($horario->hora_inicio);
+                                                        }
+                                                    }
+                                                    
+                                                    try {
+                                                        $horaFin = \Carbon\Carbon::createFromFormat('H:i', $horario->hora_fin);
+                                                    } catch (\Exception $e) {
+                                                        try {
+                                                            $horaFin = \Carbon\Carbon::createFromFormat('H:i:s', $horario->hora_fin);
+                                                        } catch (\Exception $e2) {
+                                                            $horaFin = \Carbon\Carbon::parse($horario->hora_fin);
+                                                        }
+                                                    }
                                                     
                                                     $estadoClase = 'programada';
                                                     $colorEstado = 'secondary';

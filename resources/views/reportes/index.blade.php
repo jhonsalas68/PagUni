@@ -339,7 +339,7 @@
                         <select class="form-select" id="docente_carga" name="docente_id">
                             <option value="">Todos los docentes</option>
                             @foreach($docentes as $docente)
-                                <option value="{{ $docente->id }}">{{ $docente->nombre }}</option>
+                                <option value="{{ $docente->id }}">{{ $docente->nombre_completo }}</option>
                             @endforeach
                         </select>
                     </div>

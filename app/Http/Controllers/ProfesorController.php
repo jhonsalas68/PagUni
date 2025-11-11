@@ -26,7 +26,7 @@ $profesorId = session('user_id');
             ->whereHas('cargaAcademica', function($query) use ($profesorId) {
                 $query->where('profesor_id', $profesorId);
             })
-            ->where('dia_semana', $diaSemana)
+            ->whereJsonContains('dias_semana', strtolower($this->getDiaNombre($diaSemana)))
             ->orderBy('hora_inicio')
             ->get();
 
@@ -45,17 +45,15 @@ $profesorId = session('user_id');
             ->whereHas('cargaAcademica', function($query) use ($profesorId) {
                 $query->where('profesor_id', $profesorId);
             })
-            ->orderBy('dia_semana')
             ->orderBy('hora_inicio')
-            ->get()
-            ->groupBy('dia_semana');
+            ->get();
 
         // Estadísticas del profesor
         $estadisticas = [
             'clases_hoy' => $horariosHoy->count(),
             'clases_asistidas_hoy' => $asistenciasHoy->whereIn('estado', ['presente', 'en_clase'])->count(),
             'clases_pendientes_hoy' => $horariosHoy->count() - $asistenciasHoy->count(),
-            'total_materias' => $horariosSemana->flatten()->pluck('cargaAcademica.grupo.materia.nombre')->unique()->count(),
+            'total_materias' => $horariosSemana->pluck('cargaAcademica.grupo.materia.nombre')->unique()->count(),
         ];
 
         return view('profesor.dashboard-funcional', compact('horariosHoy', 'horariosSemana', 'asistenciasHoy', 'estadisticas', 'hoy'));
@@ -76,7 +74,7 @@ $profesorId = session('user_id');
             ->whereHas('cargaAcademica', function($query) use ($profesorId) {
                 $query->where('profesor_id', $profesorId);
             })
-            ->where('dia_semana', $diaSemana)
+            ->whereJsonContains('dias_semana', strtolower($this->getDiaNombre($diaSemana)))
             ->orderBy('hora_inicio')
             ->get();
 
@@ -95,10 +93,8 @@ $profesorId = session('user_id');
             ->whereHas('cargaAcademica', function($query) use ($profesorId) {
                 $query->where('profesor_id', $profesorId);
             })
-            ->orderBy('dia_semana')
             ->orderBy('hora_inicio')
-            ->get()
-            ->groupBy('dia_semana');
+            ->get();
 
         return view('profesor.dashboard-simple', compact('horariosHoy', 'horariosSemana', 'asistenciasHoy', 'hoy'));
     }
@@ -118,7 +114,7 @@ $profesorId = session('user_id');
             ->whereHas('cargaAcademica', function($query) use ($profesorId) {
                 $query->where('profesor_id', $profesorId);
             })
-            ->where('dia_semana', $diaSemana)
+            ->whereJsonContains('dias_semana', strtolower($this->getDiaNombre($diaSemana)))
             ->orderBy('hora_inicio')
             ->get();
 
@@ -137,17 +133,15 @@ $profesorId = session('user_id');
             ->whereHas('cargaAcademica', function($query) use ($profesorId) {
                 $query->where('profesor_id', $profesorId);
             })
-            ->orderBy('dia_semana')
             ->orderBy('hora_inicio')
-            ->get()
-            ->groupBy('dia_semana');
+            ->get();
 
         // Estadísticas del profesor
         $estadisticas = [
             'clases_hoy' => $horariosHoy->count(),
             'clases_asistidas_hoy' => $asistenciasHoy->whereIn('estado', ['presente', 'en_clase'])->count(),
             'clases_pendientes_hoy' => $horariosHoy->count() - $asistenciasHoy->count(),
-            'total_materias' => $horariosSemana->flatten()->pluck('cargaAcademica.grupo.materia.nombre')->unique()->count(),
+            'total_materias' => $horariosSemana->pluck('cargaAcademica.grupo.materia.nombre')->unique()->count(),
         ];
 
         return view('profesor.dashboard-funcional', compact('horariosHoy', 'horariosSemana', 'asistenciasHoy', 'estadisticas', 'hoy'));
@@ -418,14 +412,10 @@ $profesorId = session('user_id');
             ->whereHas('cargaAcademica', function($query) use ($profesorId) {
                 $query->where('profesor_id', $profesorId);
             })
-            ->orderBy('dia_semana')
             ->orderBy('hora_inicio')
             ->get();
 
-        // Agrupar por día de la semana
-        $horariosPorDia = $horarios->groupBy('dia_semana');
-
-        return view('profesor.mi-horario', compact('horariosPorDia'));
+        return view('profesor.mi-horario', compact('horarios'));
     }
 
     /**
@@ -546,5 +536,23 @@ $profesorId = session('user_id');
     {
         $profesor->delete();
         return response()->json(null, 204);
+    }
+
+    /**
+     * Convertir número de día a nombre
+     */
+    private function getDiaNombre($numeroDia)
+    {
+        $dias = [
+            1 => 'lunes',
+            2 => 'martes',
+            3 => 'miercoles',
+            4 => 'jueves',
+            5 => 'viernes',
+            6 => 'sabado',
+            7 => 'domingo'
+        ];
+        
+        return $dias[$numeroDia] ?? 'lunes';
     }
 }

@@ -204,7 +204,6 @@ class AsistenciaDocenteController extends Controller
             ->whereHas('cargaAcademica', function($query) use ($profesorId) {
                 $query->where('profesor_id', $profesorId);
             })
-            ->orderBy('dia_semana')
             ->orderBy('hora_inicio')
             ->get();
 
@@ -264,7 +263,7 @@ class AsistenciaDocenteController extends Controller
 
         $horarios = Horario::with(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia'])
             ->where('aula_id', $aulaId)
-            ->where('dia_semana', $diaSemana)
+            ->whereJsonContains('dias_semana', strtolower($this->getDiaNombre($diaSemana)))
             ->orderBy('hora_inicio')
             ->get();
 
@@ -329,7 +328,7 @@ class AsistenciaDocenteController extends Controller
 
         // Obtener todos los horarios del día
         $horariosDelDia = Horario::with(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula'])
-            ->where('dia_semana', $diaSemana)
+            ->whereJsonContains('dias_semana', strtolower($this->getDiaNombre($diaSemana)))
             ->orderBy('hora_inicio')
             ->get();
 
@@ -385,5 +384,23 @@ class AsistenciaDocenteController extends Controller
                 'ultima_actualizacion' => now()->toISOString(),
             ]
         ]);
+    }
+
+    /**
+     * Convertir número de día a nombre
+     */
+    private function getDiaNombre($numeroDia)
+    {
+        $dias = [
+            1 => 'lunes',
+            2 => 'martes',
+            3 => 'miercoles',
+            4 => 'jueves',
+            5 => 'viernes',
+            6 => 'sabado',
+            7 => 'domingo'
+        ];
+        
+        return $dias[$numeroDia] ?? 'lunes';
     }
 }

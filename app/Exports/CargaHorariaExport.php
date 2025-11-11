@@ -30,9 +30,12 @@ class CargaHorariaExport implements FromArray, WithHeadings, WithStyles, WithTit
             'Docente',
             'Materia',
             'Grupo',
-            'Horas Asignadas',
+            'Horas Semanales',
+            'Horas Mensuales',
+            'Horas Semestrales',
             'Horas Impartidas',
-            'Porcentaje Cumplimiento (%)'
+            'Porcentaje Real (%)',
+            'Porcentaje Pago (%)'
         ];
     }
 
@@ -40,7 +43,7 @@ class CargaHorariaExport implements FromArray, WithHeadings, WithStyles, WithTit
     {
         return [
             1 => ['font' => ['bold' => true]],
-            'F:F' => ['numberFormat' => ['formatCode' => '0.00"%"']],
+            'H:I' => ['numberFormat' => ['formatCode' => '0.00"%"']],
         ];
     }
 
