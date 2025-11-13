@@ -2,11 +2,13 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>@yield('title', 'Dashboard - Sistema Universitario')</title>
     
     <!-- PWA Meta Tags -->
@@ -23,6 +25,9 @@
     <!-- CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/responsive.css" rel="stylesheet">
+    <link href="/css/mobile-tables.css" rel="stylesheet">
+    <link href="/css/components.css" rel="stylesheet">
     @yield('head')
     
     <style>
@@ -463,9 +468,16 @@
         </main>
     </div>
 
+    <!-- Botón de instalación PWA -->
+    <button id="pwa-install-btn" style="display: none;">
+        <i class="fas fa-download"></i> Instalar App
+    </button>
+
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/pwa-handler.js"></script>
+    <script src="/js/responsive-tables.js"></script>
     <script src="/js/history-navigation.js"></script>
     <script src="/js/pagination-scroll.js"></script>
     

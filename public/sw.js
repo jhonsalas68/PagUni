@@ -1,11 +1,15 @@
-const CACHE_NAME = 'sgu-v2.0.0';
-const STATIC_CACHE = 'sgu-static-v2.0.0';
-const DYNAMIC_CACHE = 'sgu-dynamic-v2.0.0';
+const CACHE_NAME = 'sgu-v2.1.0';
+const STATIC_CACHE = 'sgu-static-v2.1.0';
+const DYNAMIC_CACHE = 'sgu-dynamic-v2.1.0';
 
 const urlsToCache = [
   '/',
   '/offline.html',
   '/manifest.json',
+  '/css/responsive.css',
+  '/js/pwa-handler.js',
+  '/js/history-navigation.js',
+  '/js/pagination-scroll.js',
   '/images/icons/icon-192x192.png',
   '/images/icons/icon-512x512.png',
   // Rutas principales

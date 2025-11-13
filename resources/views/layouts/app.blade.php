@@ -7,12 +7,13 @@
     <title>@yield('title', 'Sistema Universitario')</title>
     
     <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#007bff">
+    <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="SGU">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SGU UAGRM">
     <meta name="msapplication-TileImage" content="/images/icons/icon-144x144.png">
-    <meta name="msapplication-TileColor" content="#007bff">
+    <meta name="msapplication-TileColor" content="#0d6efd">
+    <meta name="mobile-web-app-capable" content="yes">
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
@@ -23,6 +24,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/images/icons/icon-16x16.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/responsive.css" rel="stylesheet">
     <style>
         .login-container {
             min-height: 100vh;
