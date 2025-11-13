@@ -156,9 +156,32 @@
                         </div>
 
                         <!-- Paginación -->
-                        <div class="d-flex justify-content-center mt-4">
-                            {{ $asistencias->appends(request()->query())->links() }}
+                        @if($asistencias->hasPages())
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                            <small class="text-muted">
+                                Mostrando {{ $asistencias->firstItem() ?? 0 }}-{{ $asistencias->lastItem() ?? 0 }} de {{ $asistencias->total() }}
+                            </small>
+                            <nav>
+                                <ul class="pagination pagination-sm mb-0">
+                                    @if ($asistencias->onFirstPage())
+                                        <li class="page-item disabled"><span class="page-link">‹ Anterior</span></li>
+                                    @else
+                                        <li class="page-item"><a class="page-link" href="{{ $asistencias->appends(request()->query())->previousPageUrl() }}">‹ Anterior</a></li>
+                                    @endif
+                                    
+                                    <li class="page-item disabled">
+                                        <span class="page-link">Pág. {{ $asistencias->currentPage() }} de {{ $asistencias->lastPage() }}</span>
+                                    </li>
+                                    
+                                    @if ($asistencias->hasMorePages())
+                                        <li class="page-item"><a class="page-link" href="{{ $asistencias->appends(request()->query())->nextPageUrl() }}">Siguiente ›</a></li>
+                                    @else
+                                        <li class="page-item disabled"><span class="page-link">Siguiente ›</span></li>
+                                    @endif
+                                </ul>
+                            </nav>
                         </div>
+                        @endif
                     @else
                         <div class="text-center py-4">
                             <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>

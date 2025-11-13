@@ -50,6 +50,11 @@ class Horario extends Model
         return $this->belongsTo(Aula::class);
     }
 
+    public function asistenciasEstudiantes()
+    {
+        return $this->hasMany(AsistenciaEstudiante::class);
+    }
+
     // Accessors para formatear las horas correctamente
     public function getHoraInicioAttribute($value)
     {
@@ -243,18 +248,20 @@ class Horario extends Model
         // Query base más robusta para conflictos de horario (ahora con múltiples días)
         $baseQuery = self::query()
             ->with(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula'])
-            ->where('periodo_academico', $periodo_academico)
+            ->where('horarios.periodo_academico', $periodo_academico)
             ->where(function ($q) use ($dias_semana) {
                 // Verificar si alguno de los días solicitados está en el array de días del horario
                 foreach ($dias_semana as $dia) {
-                    $q->orWhereJsonContains('dias_semana', $dia);
+                    // Convertir a minúsculas y buscar en el JSON
+                    $diaLower = is_string($dia) ? strtolower($dia) : $dia;
+                    $q->orWhereJsonContains('horarios.dias_semana', $diaLower);
                 }
             })
             ->where(function ($q) use ($hora_inicio, $hora_fin) {
                 // Verificar solapamiento real: dos horarios se solapan si uno inicia antes de que termine el otro
                 // Fórmula: (inicio1 < fin2) AND (fin1 > inicio2)
-                $q->where('hora_inicio', '<', $hora_fin)
-                  ->where('hora_fin', '>', $hora_inicio);
+                $q->where('horarios.hora_inicio', '<', $hora_fin)
+                  ->where('horarios.hora_fin', '>', $hora_inicio);
             });
 
         if ($excluir_id) {

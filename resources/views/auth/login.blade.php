@@ -8,8 +8,8 @@
         <!-- Logo Universidad -->
         <div class="text-center mb-4">
             <div class="university-header">
-                <h2 class="text-white mb-2">Universidad Autónoma Gabriel René Moreno</h2>
-                <h5 class="text-white opacity-75">Sistema de Gestión Académica</h5>
+                <h2 class="university-name">Universidad Autónoma Gabriel René Moreno</h2>
+                <h5 class="system-name">Sistema de Gestión Académica</h5>
             </div>
         </div>
 
@@ -148,74 +148,81 @@
 </div>
 
 <style>
-    .university-header h2 {
-        font-size: 1.8rem;
-        font-weight: 600;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    .university-header {
+        padding: 2rem 1rem 1rem;
+        margin-bottom: 2rem;
     }
 
-    .university-header h5 {
-        font-size: 1.1rem;
+    .university-name {
+        font-size: 1.8rem;
+        font-weight: 400;
+        color: #6c757d;
+        margin-bottom: 0;
+        letter-spacing: 0.5px;
+        line-height: 1.3;
+    }
+
+    .system-name {
+        display: none;
     }
 
     .welcome-title {
         color: #dc3545;
         font-weight: 700;
-        font-size: 2.5rem;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
     }
 
     .select-title {
         color: #0d6efd;
-        font-weight: 600;
-        font-size: 1.5rem;
+        font-weight: 500;
+        font-size: 1.3rem;
     }
 
     .user-type-card {
-        background: white;
-        border-radius: 15px;
-        padding: 2rem 1.5rem;
+        background: #e9ecef;
+        border-radius: 8px;
+        padding: 2rem 1rem;
         text-align: center;
         cursor: pointer;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        border: 3px solid transparent;
+        border: 2px solid #e9ecef;
         height: 100%;
     }
 
     .user-type-card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-        border-color: #0d6efd;
+        background: white;
+        border-color: #dee2e6;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
     .user-type-card.active {
-        border-color: #dc3545;
-        background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(13, 110, 253, 0.1) 100%);
+        background: white;
+        border-color: #0d6efd;
+        box-shadow: 0 2px 8px rgba(13, 110, 253, 0.2);
     }
 
     .card-icon {
-        font-size: 4rem;
-        margin-bottom: 1rem;
-        color: #0d6efd;
+        font-size: 3.5rem;
+        margin-bottom: 0.5rem;
+        color: #333;
         transition: all 0.3s ease;
     }
 
-    .user-type-card:hover .card-icon {
-        color: #dc3545;
-        transform: scale(1.1);
+    .user-type-card:hover .card-icon,
+    .user-type-card.active .card-icon {
+        color: #0d6efd;
     }
 
     .card-title {
-        font-weight: 700;
+        font-weight: 600;
         color: #333;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0;
+        font-size: 1rem;
     }
 
     .card-description {
-        color: #666;
-        font-size: 0.9rem;
-        margin: 0;
+        display: none;
     }
 
     .selected-icon {
@@ -239,20 +246,32 @@
     }
 
     @media (max-width: 768px) {
+        .university-name {
+            font-size: 1.3rem;
+        }
+
+        .university-header {
+            padding: 1.5rem 1rem 0.5rem;
+        }
+
         .welcome-title {
-            font-size: 1.8rem;
+            font-size: 1.5rem;
         }
         
         .select-title {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
         }
 
         .user-type-card {
-            padding: 1.5rem 1rem;
+            padding: 1.5rem 0.5rem;
         }
 
         .card-icon {
-            font-size: 3rem;
+            font-size: 2.5rem;
+        }
+
+        .card-title {
+            font-size: 0.9rem;
         }
     }
 </style>
@@ -296,6 +315,9 @@
             card.addEventListener('click', function() {
                 const type = this.dataset.type;
                 const config = userTypeConfig[type];
+
+                // Establecer el tipo de usuario en el campo oculto
+                document.getElementById('userType').value = type;
 
                 // Actualizar UI
                 selectedIcon.className = 'fas ' + config.icon;

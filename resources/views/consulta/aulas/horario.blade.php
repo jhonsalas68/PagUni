@@ -13,9 +13,25 @@
                             <i class="fas fa-door-open"></i> Horario del Aula {{ $aula->codigo_aula }}
                         </h4>
                         <div>
-                            <a href="{{ route('consulta.aulas.index') }}" class="btn btn-light btn-sm">
-                                <i class="fas fa-arrow-left"></i> Volver
-                            </a>
+                            @auth
+                                @if(auth()->user()->tipo === 'administrador')
+                                    <a href="{{ route('admin.dashboard') }}" class="btn btn-light btn-sm">
+                                        <i class="fas fa-home"></i> Volver al Dashboard
+                                    </a>
+                                @elseif(auth()->user()->tipo === 'profesor')
+                                    <a href="{{ route('profesor.dashboard') }}" class="btn btn-light btn-sm">
+                                        <i class="fas fa-home"></i> Volver al Dashboard
+                                    </a>
+                                @elseif(auth()->user()->tipo === 'estudiante')
+                                    <a href="{{ route('estudiante.dashboard') }}" class="btn btn-light btn-sm">
+                                        <i class="fas fa-home"></i> Volver al Dashboard
+                                    </a>
+                                @endif
+                            @else
+                                <a href="{{ route('consulta.aulas.index') }}" class="btn btn-light btn-sm">
+                                    <i class="fas fa-arrow-left"></i> Volver
+                                </a>
+                            @endauth
                             <button class="btn btn-light btn-sm" onclick="window.print()">
                                 <i class="fas fa-print"></i> Imprimir
                             </button>

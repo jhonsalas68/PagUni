@@ -111,25 +111,22 @@ class AsistenciaDocente extends Model
             'fecha' => $fecha,
         ])->count() + 1;
 
-        // Generar token único
-        $qrToken = self::generarTokenQR($profesorId, $horarioId, $numeroSesion);
+        // Generar token único con timestamp para garantizar unicidad
+        $qrToken = self::generarTokenQR($profesorId, $horarioId, $numeroSesion) . '_' . time();
 
-        // Crear o actualizar registro de asistencia
-        $asistencia = self::updateOrCreate(
-            [
-                'profesor_id' => $profesorId,
-                'horario_id' => $horarioId,
-                'fecha' => $fecha,
-                'numero_sesion' => $numeroSesion,
-            ],
-            [
-                'qr_token' => $qrToken,
-                'qr_generado_at' => now(),
-                'modalidad' => $modalidad,
-                'estado' => 'pendiente_qr',
-                'validado_en_horario' => false,
-            ]
-        );
+        // SIEMPRE crear un nuevo registro (no reutilizar)
+        $asistencia = self::create([
+            'profesor_id' => $profesorId,
+            'horario_id' => $horarioId,
+            'fecha' => $fecha,
+            'numero_sesion' => $numeroSesion,
+            'qr_token' => $qrToken,
+            'qr_generado_at' => now(),
+            'qr_expiracion' => now()->addMinutes(15), // QR válido por 15 minutos
+            'modalidad' => $modalidad,
+            'estado' => 'pendiente_qr',
+            'validado_en_horario' => false,
+        ]);
 
         return $asistencia;
     }
@@ -333,7 +330,6 @@ class AsistenciaDocente extends Model
             'estado' => 'justificado',
             'justificacion' => $justificacion,
             'tipo_justificacion' => $tipoJustificacion,
-            'justificado_por' => $justificadoPor,
             'fecha_justificacion' => now(),
         ]);
 
@@ -382,7 +378,6 @@ class AsistenciaDocente extends Model
                 'modalidad' => $modalidad,
                 'observaciones' => $observaciones,
                 'validado_en_horario' => true,
-                'justificado_por' => $registradoPor,
                 'fecha_justificacion' => now(),
             ]
         );

@@ -1,16 +1,20 @@
-@extends('layouts.app')
+@extends('layouts.dashboard')
 
 @section('title', 'Consulta de Aulas')
 
 @section('content')
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-10">
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-door-open"></i> Consulta de Horarios de Aulas
+        </h1>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
             <div class="card shadow">
-                <div class="card-header bg-info text-white">
-                    <h4 class="mb-0">
-                        <i class="fas fa-door-open"></i> Consulta de Horarios de Aulas
-                    </h4>
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">Selecciona un aula</h6>
                 </div>
                 <div class="card-body">
                     <p class="text-muted mb-4">

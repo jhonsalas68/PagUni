@@ -4,6 +4,9 @@
 
 @section('head')
 <meta name="csrf-token" content="{{ csrf_token() }}">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 @endsection
 
 @section('content')
@@ -167,16 +170,11 @@
                                                     <button class="btn btn-warning btn-sm" onclick="abrirQRExistente('{{ $asistencia->qr_token }}')">
                                                         <i class="fas fa-qrcode"></i> Ver QR Generado
                                                     </button>
-                                                @elseif($asistencia && in_array($asistencia->estado, ['presente', 'tardanza']))
-                                                    <div class="d-flex gap-1">
-                                                        <button class="btn btn-outline-success btn-sm flex-fill" disabled>
-                                                            <i class="fas fa-check"></i> Confirmado
-                                                        </button>
-                                                        <button class="btn btn-outline-primary btn-sm" onclick="mostrarModalQR({{ $horario->id }})">
-                                                            <i class="fas fa-plus"></i> Nueva Sesión
-                                                        </button>
-                                                    </div>
-                                                @else
+                                                @elseif($asistencia && in_array($asistencia->estado, ['presente', 'tardanza', 'en_clase']))
+                                                    <button class="btn btn-success btn-sm" disabled>
+                                                        <i class="fas fa-check-circle"></i> Asistencia Confirmada
+                                                    </button>
+                                                @elseif(!$asistencia)
                                                     <button class="btn btn-primary btn-sm" onclick="mostrarModalQR({{ $horario->id }})">
                                                         <i class="fas fa-qrcode"></i> Generar QR
                                                     </button>
@@ -539,9 +537,10 @@ function generarQR() {
             const qrVistaUrl = `{{ url('/profesor/qr-vista') }}/${data.data.qr_token}`;
             window.open(qrVistaUrl, '_blank', 'width=800,height=900,scrollbars=yes,resizable=yes');
             
-            // Actualizar página después de 1 segundo
+            // Actualizar página después de 1 segundo (forzar recarga sin caché)
             setTimeout(() => {
-                location.reload();
+                // Agregar timestamp para evitar caché
+                window.location.href = window.location.href.split('?')[0] + '?t=' + new Date().getTime();
             }, 1000);
         } else {
             console.log('❌ Error en respuesta:', data.error);
@@ -690,7 +689,8 @@ function abrirQRExistente(token) {
 
 // Función para actualizar asistencias
 function actualizarAsistencias() {
-    location.reload();
+    // Agregar timestamp para evitar caché
+    window.location.href = window.location.href.split('?')[0] + '?t=' + new Date().getTime();
 }
 
 // Función para mostrar alertas

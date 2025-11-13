@@ -9,9 +9,26 @@ use Illuminate\Http\Request;
 
 class MateriaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-$materias = Materia::with('carrera.facultad')->orderBy('codigo')->get();
+        $query = Materia::with('carrera.facultad');
+
+        // Filtro por búsqueda (nombre, código o sigla)
+        if ($request->filled('buscar')) {
+            $buscar = $request->buscar;
+            $query->where(function($q) use ($buscar) {
+                $q->where('nombre', 'like', "%{$buscar}%")
+                  ->orWhere('codigo', 'like', "%{$buscar}%");
+            });
+        }
+
+        // Filtro por semestre
+        if ($request->filled('semestre')) {
+            $query->where('semestre', $request->semestre);
+        }
+
+        $materias = $query->orderBy('codigo')->paginate(10)->withQueryString();
+        
         return view('admin.materias.index', compact('materias'));
     }
 

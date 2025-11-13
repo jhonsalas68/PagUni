@@ -36,7 +36,7 @@ $query = Feriado::query();
 
         // Ordenar por fecha
         $feriados = $query->orderBy('fecha_inicio', 'desc')
-                         ->paginate(15)
+                         ->paginate(10)
                          ->withQueryString();
 
         // Estadísticas

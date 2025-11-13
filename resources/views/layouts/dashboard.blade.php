@@ -121,14 +121,15 @@
             }
             
             .sidebar {
-                position: relative;
+                position: fixed;
                 transform: translateX(0);
                 width: 280px;
                 flex-shrink: 0;
             }
             
             .main-content {
-                flex: 1;
+                margin-left: 280px;
+                width: calc(100% - 280px);
             }
             
             .dashboard-wrapper {
@@ -374,8 +375,18 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.periodos-academicos.*') ? 'active' : '' }}" href="{{ route('admin.periodos-academicos.index') }}">
+                                <i class="fas fa-calendar-check"></i> Periodos Académicos
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('admin.feriados.*') ? 'active' : '' }}" href="{{ route('admin.feriados.index') }}">
                                 <i class="fas fa-calendar-times"></i> Feriados
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.justificaciones.*') ? 'active' : '' }}" href="{{ route('admin.justificaciones.index') }}">
+                                <i class="fas fa-file-medical"></i> Justificaciones
                             </a>
                         </li>
                         <li class="nav-item">
@@ -455,6 +466,8 @@
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/history-navigation.js"></script>
+    <script src="/js/pagination-scroll.js"></script>
     
     <script>
         // Variables

@@ -81,13 +81,13 @@ class PanelAsistenciaController extends Controller
             'profesores_presentes' => $asistenciasDelDia->whereIn('estado', ['presente', 'en_clase'])->count(),
             'profesores_ausentes' => $horariosDelDia->count() - $asistenciasDelDia->count(),
             'tardanzas' => $asistenciasDelDia->where('estado', 'tardanza')->count(),
-            'justificados' => $asistenciasDelDia->where('estado', 'justificada')->count(),
+            'justificados' => $asistenciasDelDia->where('estado', 'justificado')->count(),
             'clases_virtuales' => $asistenciasDelDia->where('modalidad', 'virtual')->count(),
             'clases_presenciales' => $asistenciasDelDia->where('modalidad', 'presencial')->count(),
         ];
 
         // Estado actual por profesor
-        $estadoProfesores = $horariosDelDia->map(function($horario) use ($asistenciasDelDia) {
+        $estadoProfesoresCollection = $horariosDelDia->map(function($horario) use ($asistenciasDelDia) {
             $asistencia = $asistenciasDelDia->get($horario->id);
             $ahora = Carbon::now();
             
@@ -104,7 +104,7 @@ class PanelAsistenciaController extends Controller
                         $estadoActual = 'completado';
                     } elseif ($asistencia->estado === 'tardanza') {
                         $estadoActual = 'tardanza';
-                    } elseif ($asistencia->estado === 'justificada') {
+                    } elseif ($asistencia->estado === 'justificado') {
                         $estadoActual = 'justificado';
                     }
                 } elseif ($horaFin && $ahora->gt($horaFin)) {
@@ -124,7 +124,22 @@ class PanelAsistenciaController extends Controller
             ];
         });
 
-        return view('admin.panel-asistencia', compact('estadoProfesores', 'estadisticas', 'fecha', 'fechaCarbon'));
+        // Paginar los resultados
+        $page = request()->get('page', 1);
+        $perPage = 15;
+        $estadoProfesores = new \Illuminate\Pagination\LengthAwarePaginator(
+            $estadoProfesoresCollection->forPage($page, $perPage),
+            $estadoProfesoresCollection->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
+        return response()
+            ->view('admin.panel-asistencia', compact('estadoProfesores', 'estadisticas', 'fecha', 'fechaCarbon'))
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     /**

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Sistema Universitario')</title>
     
     <!-- PWA Meta Tags -->
@@ -25,10 +26,7 @@
     <style>
         .login-container {
             min-height: 100vh;
-            background: linear-gradient(135deg, #dc3545 0%, #0d6efd 100%);
-            background-image: 
-                radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 50%);
+            background: #f8f9fa;
         }
         .login-card {
             border: none;

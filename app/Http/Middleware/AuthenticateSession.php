@@ -40,9 +40,13 @@ class AuthenticateSession
         // Agregar headers anti-caché a la respuesta
         $response = $next($request);
         
-        return $response
-            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-            ->header('Pragma', 'no-cache')
-            ->header('Expires', '0');
+        // Solo agregar headers si no es una descarga de archivo
+        if (!($response instanceof \Symfony\Component\HttpFoundation\BinaryFileResponse)) {
+            $response->header('Cache-Control', 'no-cache, no-store, must-revalidate');
+            $response->header('Pragma', 'no-cache');
+            $response->header('Expires', '0');
+        }
+        
+        return $response;
     }
 }

@@ -273,6 +273,17 @@
                                 </tbody>
                             </table>
                         </div>
+
+                        <!-- Paginación -->
+                        <div class="d-flex justify-content-between align-items-center mt-3 px-3">
+                            <div class="text-muted">
+                                Mostrando {{ $estadoProfesores->firstItem() ?? 0 }} a {{ $estadoProfesores->lastItem() ?? 0 }} 
+                                de {{ $estadoProfesores->total() }} clases
+                            </div>
+                            <div>
+                                {{ $estadoProfesores->appends(['fecha' => $fecha])->links() }}
+                            </div>
+                        </div>
                     @else
                         <div class="text-center py-5">
                             <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
@@ -449,5 +460,43 @@ function enviarJustificacionPanel() {
         alert('Error de conexión: ' + error.message);
     });
 }
+
+// Auto-scroll al inicio al cambiar de página
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.search.includes('page=')) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+});
 </script>
+
+<style>
+/* Estilos para la paginación Bootstrap */
+.pagination {
+    margin: 0;
+}
+.pagination .page-link {
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #0d6efd;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+}
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+.pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    pointer-events: none;
+    background-color: #fff;
+    border-color: #dee2e6;
+}
+.pagination .page-link:hover {
+    color: #0a58ca;
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+}
+</style>
 @endsection

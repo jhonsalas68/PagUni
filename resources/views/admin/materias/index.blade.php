@@ -25,6 +25,40 @@
             <h6 class="m-0 font-weight-bold text-primary">Lista de Materias</h6>
         </div>
         <div class="card-body">
+            <!-- Filtros de búsqueda -->
+            <form method="GET" action="{{ route('admin.materias.index') }}" class="mb-4">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label for="buscar" class="form-label">Buscar por Nombre o Código</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="buscar" 
+                               name="buscar" 
+                               value="{{ request('buscar') }}" 
+                               placeholder="Ej: Cálculo, MAT-101">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="semestre" class="form-label">Semestre</label>
+                        <select class="form-select" id="semestre" name="semestre">
+                            <option value="">Todos los semestres</option>
+                            @for($i = 1; $i <= 12; $i++)
+                                <option value="{{ $i }}" {{ request('semestre') == $i ? 'selected' : '' }}>
+                                    {{ $i }}° Semestre
+                                </option>
+                            @endfor
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Buscar
+                        </button>
+                        <a href="{{ route('admin.materias.index') }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Limpiar
+                        </a>
+                    </div>
+                </div>
+            </form>
+
             <div class="table-responsive">
                 <table class="table table-striped">
                     <thead>
@@ -93,7 +127,58 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Paginación -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="text-muted">
+                    Mostrando {{ $materias->firstItem() ?? 0 }} a {{ $materias->lastItem() ?? 0 }} 
+                    de {{ $materias->total() }} materias
+                </div>
+                <div>
+                    {{ $materias->links() }}
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<style>
+/* Estilos para la paginación Bootstrap */
+.pagination {
+    margin: 0;
+}
+.pagination .page-link {
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #0d6efd;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+}
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+.pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    pointer-events: none;
+    background-color: #fff;
+    border-color: #dee2e6;
+}
+.pagination .page-link:hover {
+    color: #0a58ca;
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+}
+</style>
+
+<script>
+// Auto-scroll al inicio al cambiar de página
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.search.includes('page=')) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+});
+</script>
 @endsection

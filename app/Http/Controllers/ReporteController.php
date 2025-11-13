@@ -50,7 +50,7 @@ class ReporteController extends Controller
             'presentes' => $asistencias->where('estado', 'presente')->count(),
             'tardanzas' => $asistencias->where('estado', 'tardanza')->count(),
             'faltas' => $asistencias->where('estado', 'falta')->count(),
-            'justificadas' => $asistencias->where('estado', 'justificada')->count(),
+            'justificadas' => $asistencias->where('estado', 'justificado')->count(),
         ];
 
         $html = view('reportes.pdf.asistencia-estatico', compact('asistencias', 'estadisticas', 'fechaInicio', 'fechaFin'))->render();
@@ -201,10 +201,11 @@ class ReporteController extends Controller
 
         // Query base para actividades
         $query = AsistenciaDocente::with([
+            'profesor',
             'horario.cargaAcademica.profesor', 
             'horario.cargaAcademica.grupo.materia', 
             'horario.aula'
-        ])->whereBetween('created_at', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59']);
+        ])->whereBetween('fecha', [$fechaInicio, $fechaFin]);
 
         // Filtrar por tipo de actividad
         if ($tipoActividad !== 'todas') {
@@ -219,7 +220,7 @@ class ReporteController extends Controller
                     $query->where('estado', 'falta');
                     break;
                 case 'justificaciones':
-                    $query->where('estado', 'justificada');
+                    $query->where('estado', 'justificado');
                     break;
             }
         }
@@ -245,7 +246,9 @@ class ReporteController extends Controller
             });
         }
 
-        $actividades = $query->orderBy('asistencia_docente.created_at', 'desc')->paginate(50);
+        $actividades = $query->orderBy('fecha', 'desc')
+            ->orderBy('hora_entrada', 'desc')
+            ->paginate(20);
 
         // Estadísticas detalladas
         $estadisticas = [
@@ -257,7 +260,7 @@ class ReporteController extends Controller
             'faltas_registradas' => AsistenciaDocente::whereBetween('asistencia_docente.created_at', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59'])
                 ->where('estado', 'falta')->count(),
             'justificaciones' => AsistenciaDocente::whereBetween('asistencia_docente.created_at', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59'])
-                ->where('estado', 'justificada')->count(),
+                ->where('estado', 'justificado')->count(),
             'docentes_activos' => AsistenciaDocente::whereBetween('asistencia_docente.created_at', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59'])
                 ->join('horarios', 'asistencia_docente.horario_id', '=', 'horarios.id')
                 ->join('carga_academica', 'horarios.carga_academica_id', '=', 'carga_academica.id')
@@ -319,12 +322,16 @@ class ReporteController extends Controller
             ->limit(10)
             ->get();
 
-        return view('reportes.bitacora', compact(
-            'actividades', 'estadisticas', 'fechaInicio', 'fechaFin', 
-            'tipoActividad', 'profesorId', 'materiaId', 'aulaId',
-            'profesores', 'materias', 'aulas', 'actividadesPorDia', 
-            'profesoresActivos', 'materiasActivas', 'aulasUtilizadas'
-        ));
+        return response()
+            ->view('reportes.bitacora', compact(
+                'actividades', 'estadisticas', 'fechaInicio', 'fechaFin', 
+                'tipoActividad', 'profesorId', 'materiaId', 'aulaId',
+                'profesores', 'materias', 'aulas', 'actividadesPorDia', 
+                'profesoresActivos', 'materiasActivas', 'aulasUtilizadas'
+            ))
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     /**
@@ -359,7 +366,7 @@ class ReporteController extends Controller
                     $query->where('estado', 'falta');
                     break;
                 case 'justificaciones':
-                    $query->where('estado', 'justificada');
+                    $query->where('estado', 'justificado');
                     break;
             }
         }
@@ -394,7 +401,7 @@ class ReporteController extends Controller
             'faltas_registradas' => AsistenciaDocente::whereBetween('asistencia_docente.created_at', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59'])
                 ->where('estado', 'falta')->count(),
             'justificaciones' => AsistenciaDocente::whereBetween('asistencia_docente.created_at', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59'])
-                ->where('estado', 'justificada')->count(),
+                ->where('estado', 'justificado')->count(),
             'docentes_activos' => AsistenciaDocente::whereBetween('asistencia_docente.created_at', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59'])
                 ->join('horarios', 'asistencia_docente.horario_id', '=', 'horarios.id')
                 ->join('carga_academica', 'horarios.carga_academica_id', '=', 'carga_academica.id')
@@ -462,7 +469,7 @@ class ReporteController extends Controller
             'faltas_registradas' => AsistenciaDocente::whereBetween('asistencia_docente.created_at', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59'])
                 ->where('estado', 'falta')->count(),
             'justificaciones' => AsistenciaDocente::whereBetween('asistencia_docente.created_at', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59'])
-                ->where('estado', 'justificada')->count(),
+                ->where('estado', 'justificado')->count(),
         ];
 
         $filename = 'bitacora_' . Carbon::now()->format('Y-m-d_H-i-s') . '.xlsx';

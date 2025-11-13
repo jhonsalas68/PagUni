@@ -298,13 +298,27 @@
                     <div class="col-md-4">
                         <div class="mb-3">
                             <label for="periodo_academico" class="form-label">Período Académico <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control @error('periodo_academico') is-invalid @enderror" 
-                                   id="periodo_academico" name="periodo_academico" 
-                                   value="{{ old('periodo_academico', '2024-2') }}" 
-                                   placeholder="Ej: 2024-2, 2025-1" required>
+                            <select class="form-select @error('periodo_academico') is-invalid @enderror" 
+                                    id="periodo_academico" name="periodo_academico" required>
+                                <option value="">Seleccionar periodo...</option>
+                                @foreach($periodosAcademicos as $periodo)
+                                    <option value="{{ $periodo->codigo }}" 
+                                            {{ old('periodo_academico') == $periodo->codigo || ($periodo->es_actual && !old('periodo_academico')) ? 'selected' : '' }}>
+                                        {{ $periodo->codigo }} - {{ $periodo->nombre }}
+                                        @if($periodo->es_actual)
+                                            (Actual)
+                                        @endif
+                                    </option>
+                                @endforeach
+                            </select>
                             @error('periodo_academico')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                            <small class="text-muted">
+                                <a href="{{ route('admin.periodos-academicos.index') }}" target="_blank">
+                                    <i class="fas fa-plus-circle"></i> Gestionar periodos
+                                </a>
+                            </small>
                         </div>
                     </div>
 
@@ -405,14 +419,29 @@
                                                 @forelse($horariosExistentes as $horario)
                                                 <tr data-periodo="{{ $horario->periodo_academico }}" 
                                                     data-aula="{{ $horario->aula_id }}"
-                                                    data-dia="{{ $horario->dia_semana }}"
+                                                    data-dias="{{ json_encode($horario->dias_semana ?? []) }}"
                                                     data-inicio="{{ $horario->hora_inicio }}"
                                                     data-fin="{{ $horario->hora_fin }}">
                                                     <td>
                                                         @php
-                                                            $dias = ['', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+                                                            $diasAbrev = [
+                                                                'lunes' => 'Lun',
+                                                                'martes' => 'Mar',
+                                                                'miercoles' => 'Mié',
+                                                                'jueves' => 'Jue',
+                                                                'viernes' => 'Vie',
+                                                                'sabado' => 'Sáb',
+                                                                'domingo' => 'Dom'
+                                                            ];
+                                                            $diasHorario = $horario->dias_semana ?? [];
                                                         @endphp
-                                                        <span class="badge bg-primary">{{ $dias[$horario->dia_semana] ?? 'N/A' }}</span>
+                                                        @if(!empty($diasHorario))
+                                                            @foreach($diasHorario as $dia)
+                                                                <span class="badge bg-primary">{{ $diasAbrev[$dia] ?? ucfirst($dia) }}</span>
+                                                            @endforeach
+                                                        @else
+                                                            <span class="badge bg-secondary">N/A</span>
+                                                        @endif
                                                     </td>
                                                     <td>
                                                         <small>{{ $horario->hora_inicio }} - {{ $horario->hora_fin }}</small>
@@ -511,7 +540,7 @@
 
                 <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-3">
                     <a href="{{ route('admin.horarios.index') }}" class="btn btn-secondary me-md-2">Cancelar</a>
-                    <button type="submit" class="btn btn-primary" id="guardarBtn" disabled>
+                    <button type="submit" class="btn btn-primary" id="guardarBtn">
                         <i class="fas fa-save"></i> Guardar Horarios
                     </button>
                 </div>
@@ -604,11 +633,9 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('horas-totales').textContent = horasTotal.toFixed(2) + ' hrs';
             
             cargaHorariaDiv.style.display = 'block';
-            guardarBtn.disabled = false;
         } else {
             resumenDiv.innerHTML = '<p class="text-muted">Selecciona los días y horarios para ver el resumen</p>';
             cargaHorariaDiv.style.display = 'none';
-            guardarBtn.disabled = true;
         }
     }
 
@@ -720,12 +747,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const periodoAcademico = document.getElementById('periodo_academico').value;
         const horaInicioVal = horaInicio.value;
         const horaFinVal = horaFin.value;
+        const indicadorDisponibilidad = document.getElementById('indicador-disponibilidad');
 
         // Limpiar alertas previas
         const alertaAnterior = document.getElementById('alerta-conflictos');
         if (alertaAnterior) {
             alertaAnterior.remove();
         }
+
+        // Resetear indicador
+        indicadorDisponibilidad.style.display = 'none';
+        guardarBtn.classList.remove('btn-success', 'btn-danger');
+        guardarBtn.classList.add('btn-primary');
 
         if (!cargaAcademicaId || !aulaId || !horaInicioVal || !horaFinVal || !periodoAcademico) {
             return;
@@ -739,8 +772,23 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // Mapeo de números a nombres de días
+        const diasNombres = {
+            '1': 'lunes',
+            '2': 'martes',
+            '3': 'miercoles',
+            '4': 'jueves',
+            '5': 'viernes',
+            '6': 'sabado',
+            '7': 'domingo'
+        };
+
+        let hayConflicto = false;
+
         // Validar cada día seleccionado
         for (const dia of diasSeleccionados) {
+            const diaNombre = diasNombres[dia] || dia;
+            
             try {
                 const response = await fetch('{{ route("admin.horarios.validar-disponibilidad") }}', {
                     method: 'POST',
@@ -751,7 +799,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify({
                         carga_academica_id: cargaAcademicaId,
                         aula_id: aulaId,
-                        dia_semana: dia,
+                        dia_semana: diaNombre,
                         hora_inicio: horaInicioVal,
                         hora_fin: horaFinVal,
                         periodo_academico: periodoAcademico
@@ -761,12 +809,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await response.json();
                 
                 if (!data.disponible) {
+                    hayConflicto = true;
                     mostrarAlertaConflicto(data, dia);
+                    
+                    // Cambiar botón a rojo
+                    guardarBtn.classList.remove('btn-primary', 'btn-success');
+                    guardarBtn.classList.add('btn-danger');
+                    guardarBtn.innerHTML = '<i class="fas fa-times-circle"></i> Aula Ocupada - No Disponible';
+                    
+                    // Mostrar indicador rojo
+                    indicadorDisponibilidad.textContent = '● Ocupada';
+                    indicadorDisponibilidad.className = 'badge bg-danger ms-2';
+                    indicadorDisponibilidad.style.display = 'inline';
+                    
                     break; // Mostrar solo el primer conflicto encontrado
                 }
             } catch (error) {
                 console.error('Error validando disponibilidad:', error);
             }
+        }
+
+        // Si no hay conflictos, mostrar verde
+        if (!hayConflicto && diasSeleccionados.length > 0) {
+            guardarBtn.classList.remove('btn-primary', 'btn-danger');
+            guardarBtn.classList.add('btn-success');
+            guardarBtn.innerHTML = '<i class="fas fa-check-circle"></i> Aula Disponible - Guardar Horarios';
+            
+            // Mostrar indicador verde
+            indicadorDisponibilidad.textContent = '● Disponible';
+            indicadorDisponibilidad.className = 'badge bg-success ms-2';
+            indicadorDisponibilidad.style.display = 'inline';
         }
     }
 
@@ -824,6 +896,19 @@ document.addEventListener('DOMContentLoaded', function() {
             .filter(cb => cb.checked)
             .map(cb => cb.value);
         
+        // Mapeo de números a nombres de días
+        const diasNombres = {
+            '1': 'lunes',
+            '2': 'martes',
+            '3': 'miercoles',
+            '4': 'jueves',
+            '5': 'viernes',
+            '6': 'sabado',
+            '7': 'domingo'
+        };
+        
+        const diasSeleccionadosNombres = diasSeleccionados.map(d => diasNombres[d] || d);
+        
         const aulaSeleccionada = document.getElementById('aula_id').value;
         const periodoSeleccionado = document.getElementById('periodo_academico').value;
         const horaInicioSeleccionada = horaInicio.value;
@@ -832,7 +917,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const filas = tablaHorarios.querySelectorAll('tbody tr[data-periodo]');
         
         filas.forEach(fila => {
-            const diaHorario = fila.getAttribute('data-dia');
+            const diasHorarioJson = fila.getAttribute('data-dias');
             const aulaHorario = fila.getAttribute('data-aula');
             const periodoHorario = fila.getAttribute('data-periodo');
             const inicioHorario = fila.getAttribute('data-inicio');
@@ -840,18 +925,27 @@ document.addEventListener('DOMContentLoaded', function() {
             
             let esConflicto = false;
             
-            // Verificar si hay conflicto
-            if (diasSeleccionados.includes(diaHorario) && 
-                aulaSeleccionada === aulaHorario && 
-                periodoSeleccionado === periodoHorario &&
-                horaInicioSeleccionada && horaFinSeleccionada) {
+            try {
+                const diasHorario = JSON.parse(diasHorarioJson || '[]');
                 
-                // Verificar solapamiento de horarios
-                if ((horaInicioSeleccionada >= inicioHorario && horaInicioSeleccionada < finHorario) ||
-                    (horaFinSeleccionada > inicioHorario && horaFinSeleccionada <= finHorario) ||
-                    (horaInicioSeleccionada <= inicioHorario && horaFinSeleccionada >= finHorario)) {
-                    esConflicto = true;
+                // Verificar si hay algún día en común
+                const hayDiaComun = diasSeleccionadosNombres.some(dia => diasHorario.includes(dia));
+                
+                // Verificar si hay conflicto
+                if (hayDiaComun && 
+                    aulaSeleccionada === aulaHorario && 
+                    periodoSeleccionado === periodoHorario &&
+                    horaInicioSeleccionada && horaFinSeleccionada) {
+                    
+                    // Verificar solapamiento de horarios
+                    if ((horaInicioSeleccionada >= inicioHorario && horaInicioSeleccionada < finHorario) ||
+                        (horaFinSeleccionada > inicioHorario && horaFinSeleccionada <= finHorario) ||
+                        (horaInicioSeleccionada <= inicioHorario && horaFinSeleccionada >= finHorario)) {
+                        esConflicto = true;
+                    }
                 }
+            } catch (e) {
+                console.error('Error parsing dias:', e);
             }
             
             // Aplicar estilo de conflicto

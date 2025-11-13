@@ -6,14 +6,54 @@ use App\Http\Controllers\Controller;
 use App\Models\CargaAcademica;
 use App\Models\Profesor;
 use App\Models\Grupo;
+use App\Models\Carrera;
+use App\Models\Facultad;
 use Illuminate\Http\Request;
 
 class CargaAcademicaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-$cargasAcademicas = CargaAcademica::with(['profesor', 'grupo.materia'])->orderBy('periodo', 'desc')->get();
-        return view('admin.cargas-academicas.index', compact('cargasAcademicas'));
+        $query = CargaAcademica::with(['profesor', 'grupo.materia.carrera.facultad']);
+        
+        // Filtro por facultad
+        if ($request->filled('facultad_id')) {
+            $query->whereHas('grupo.materia.carrera.facultad', function($q) use ($request) {
+                $q->where('id', $request->facultad_id);
+            });
+        }
+        
+        // Filtro por carrera
+        if ($request->filled('carrera_id')) {
+            $query->whereHas('grupo.materia.carrera', function($q) use ($request) {
+                $q->where('id', $request->carrera_id);
+            });
+        }
+        
+        // Filtro por período
+        if ($request->filled('periodo')) {
+            $query->where('periodo', $request->periodo);
+        }
+        
+        // Filtro por estado
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
+        
+        // Filtro por profesor
+        if ($request->filled('profesor_id')) {
+            $query->where('profesor_id', $request->profesor_id);
+        }
+        
+        $cargasAcademicas = $query->orderBy('periodo', 'desc')->paginate(10);
+        
+        // Obtener datos para los filtros
+        $facultades = Facultad::orderBy('nombre')->get();
+        $carreras = Carrera::orderBy('nombre')->get();
+        $profesores = Profesor::where('estado', 'activo')->orderBy('nombre')->get();
+        $periodos = CargaAcademica::select('periodo')->distinct()->orderBy('periodo', 'desc')->pluck('periodo');
+        
+        return view('admin.cargas-academicas.index', compact('cargasAcademicas', 'facultades', 'carreras', 'profesores', 'periodos'));
     }
 
     public function create(Request $request)
@@ -50,7 +90,13 @@ $request->validate([
                         ->withInput();
         }
 
-        CargaAcademica::create($request->all());
+        CargaAcademica::create([
+            'profesor_id' => $request->profesor_id,
+            'grupo_id' => $request->grupo_id,
+            'periodo' => $request->periodo,
+            'periodo_academico' => $request->periodo, // Agregar este campo también
+            'estado' => $request->estado,
+        ]);
 
         return redirect()->route('admin.cargas-academicas.index')
             ->with('success', 'Carga académica registrada exitosamente.');
@@ -91,7 +137,13 @@ $request->validate([
                         ->withInput();
         }
 
-        $cargaAcademica->update($request->all());
+        $cargaAcademica->update([
+            'profesor_id' => $request->profesor_id,
+            'grupo_id' => $request->grupo_id,
+            'periodo' => $request->periodo,
+            'periodo_academico' => $request->periodo, // Agregar este campo también
+            'estado' => $request->estado,
+        ]);
 
         return redirect()->route('admin.cargas-academicas.index')
             ->with('success', 'Carga académica actualizada exitosamente.');

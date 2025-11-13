@@ -9,9 +9,29 @@ use Illuminate\Http\Request;
 
 class GrupoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-$grupos = Grupo::with('materia.carrera')->orderBy('identificador')->get();
+        $query = Grupo::with('materia.carrera');
+
+        // Filtro por búsqueda (identificador o materia)
+        if ($request->filled('buscar')) {
+            $buscar = $request->buscar;
+            $query->where(function($q) use ($buscar) {
+                $q->where('identificador', 'like', "%{$buscar}%")
+                  ->orWhereHas('materia', function($q2) use ($buscar) {
+                      $q2->where('nombre', 'like', "%{$buscar}%")
+                         ->orWhere('codigo', 'like', "%{$buscar}%");
+                  });
+            });
+        }
+
+        // Filtro por estado
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
+
+        $grupos = $query->orderBy('identificador')->paginate(10)->withQueryString();
+        
         return view('admin.grupos.index', compact('grupos'));
     }
 

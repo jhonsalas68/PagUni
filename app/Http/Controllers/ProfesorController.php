@@ -33,12 +33,27 @@ $profesorId = session('user_id');
         // Obtener asistencias de hoy (la más reciente por horario)
         $asistenciasHoy = AsistenciaDocente::where('profesor_id', $profesorId)
             ->whereDate('fecha', $hoy)
+            ->whereIn('estado', ['presente', 'tardanza', 'en_clase', 'pendiente_qr'])
             ->orderBy('numero_sesion', 'desc')
             ->get()
             ->groupBy('horario_id')
             ->map(function($asistencias) {
                 return $asistencias->first(); // Obtener la sesión más reciente
             });
+        
+        // Debug: Log para verificar asistencias
+        \Log::info('Dashboard Profesor - Asistencias Hoy', [
+            'profesor_id' => $profesorId,
+            'fecha' => $hoy->toDateString(),
+            'total_asistencias' => $asistenciasHoy->count(),
+            'asistencias' => $asistenciasHoy->map(function($a) {
+                return [
+                    'horario_id' => $a->horario_id,
+                    'estado' => $a->estado,
+                    'fecha' => $a->fecha,
+                ];
+            })
+        ]);
 
         // Obtener todos los horarios de la semana
         $horariosSemana = Horario::with(['cargaAcademica.grupo.materia', 'aula'])
@@ -56,7 +71,11 @@ $profesorId = session('user_id');
             'total_materias' => $horariosSemana->pluck('cargaAcademica.grupo.materia.nombre')->unique()->count(),
         ];
 
-        return view('profesor.dashboard-funcional', compact('horariosHoy', 'horariosSemana', 'asistenciasHoy', 'estadisticas', 'hoy'));
+        return response()
+            ->view('profesor.dashboard-funcional', compact('horariosHoy', 'horariosSemana', 'asistenciasHoy', 'estadisticas', 'hoy'))
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     /**
@@ -263,6 +282,12 @@ $request->validate([
     public function escanearQR(Request $request, $token)
     {
         try {
+            \Log::info('Procesando escaneo QR', [
+                'token' => substr($token, 0, 20) . '...',
+                'ip' => $request->ip(),
+                'ubicacion' => $request->get('ubicacion')
+            ]);
+
             $asistencia = AsistenciaDocente::procesarEscaneoQR(
                 $token,
                 $request->ip(),
@@ -271,6 +296,11 @@ $request->validate([
 
             // Cargar relaciones para mostrar información completa
             $asistencia->load(['horario.cargaAcademica.grupo.materia', 'horario.aula']);
+
+            \Log::info('QR procesado exitosamente', [
+                'asistencia_id' => $asistencia->id,
+                'estado' => $asistencia->estado
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -289,9 +319,21 @@ $request->validate([
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Error procesando QR', [
+                'token' => substr($token, 0, 20) . '...',
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'debug' => config('app.debug') ? [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString()
+                ] : null
             ], 400);
         }
     }
@@ -483,7 +525,7 @@ $profesorId = session('user_id');
             ->whereBetween('fecha', [$fechaInicio, $fechaFin])
             ->orderBy('fecha', 'desc')
             ->orderBy('hora_entrada', 'desc')
-            ->paginate(20);
+            ->paginate(10);
 
         return view('profesor.historial-asistencias', compact('asistencias', 'fechaInicio', 'fechaFin'));
     }

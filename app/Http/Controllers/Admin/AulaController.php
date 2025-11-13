@@ -8,9 +8,32 @@ use Illuminate\Http\Request;
 
 class AulaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-$aulas = Aula::orderBy('codigo_aula')->get();
+        $query = Aula::query();
+
+        // Filtro por búsqueda (código o nombre)
+        if ($request->filled('buscar')) {
+            $buscar = $request->buscar;
+            $query->where(function($q) use ($buscar) {
+                $q->where('codigo_aula', 'like', "%{$buscar}%")
+                  ->orWhere('nombre', 'like', "%{$buscar}%")
+                  ->orWhere('edificio', 'like', "%{$buscar}%");
+            });
+        }
+
+        // Filtro por tipo de aula
+        if ($request->filled('tipo_aula')) {
+            $query->where('tipo_aula', $request->tipo_aula);
+        }
+
+        // Filtro por estado
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
+
+        $aulas = $query->orderBy('codigo_aula')->paginate(10)->withQueryString();
+        
         return view('admin.aulas.index', compact('aulas'));
     }
 

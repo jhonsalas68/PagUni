@@ -10,11 +10,39 @@ use Illuminate\Http\Request;
 
 class HorarioController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $horarios = Horario::with(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula'])
-                          ->orderBy('hora_inicio')
-                          ->get();
+        $query = Horario::with(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula']);
+
+        // Filtro por búsqueda (materia, profesor o aula)
+        if ($request->filled('buscar')) {
+            $buscar = $request->buscar;
+            $query->where(function($q) use ($buscar) {
+                $q->whereHas('cargaAcademica.grupo.materia', function($q2) use ($buscar) {
+                    $q2->where('nombre', 'like', "%{$buscar}%")
+                       ->orWhere('codigo', 'like', "%{$buscar}%");
+                })
+                ->orWhereHas('cargaAcademica.profesor', function($q2) use ($buscar) {
+                    $q2->where('nombre', 'like', "%{$buscar}%")
+                       ->orWhere('apellido', 'like', "%{$buscar}%");
+                })
+                ->orWhereHas('aula', function($q2) use ($buscar) {
+                    $q2->where('codigo_aula', 'like', "%{$buscar}%");
+                });
+            });
+        }
+
+        // Filtro por día de la semana
+        if ($request->filled('dia')) {
+            $query->whereJsonContains('dias_semana', $request->dia);
+        }
+
+        // Filtro por tipo de clase
+        if ($request->filled('tipo_clase')) {
+            $query->where('tipo_clase', $request->tipo_clase);
+        }
+
+        $horarios = $query->orderBy('hora_inicio')->paginate(10)->withQueryString();
         
         return view('admin.horarios.index', compact('horarios'));
     }
@@ -26,13 +54,20 @@ class HorarioController extends Controller
         $carreras = \App\Models\Carrera::with('facultad')->orderBy('nombre')->get();
         $materiaId = $request->input('materia_id');
         
+        // Obtener periodos académicos activos
+        $periodosAcademicos = \App\Models\PeriodoAcademico::where('estado', 'activo')
+                                                          ->orWhere('es_actual', true)
+                                                          ->orderBy('anio', 'desc')
+                                                          ->orderBy('semestre', 'desc')
+                                                          ->get();
+        
         // Obtener horarios existentes para mostrar en el formulario
         $horariosExistentes = Horario::with(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula'])
                                    ->orderBy('periodo_academico', 'desc')
                                    ->orderBy('hora_inicio')
                                    ->get();
         
-        return view('admin.horarios.create', compact('cargasAcademicas', 'aulas', 'horariosExistentes', 'materiaId', 'carreras'));
+        return view('admin.horarios.create', compact('cargasAcademicas', 'aulas', 'horariosExistentes', 'materiaId', 'carreras', 'periodosAcademicos'));
     }
 
     public function store(Request $request)
@@ -85,30 +120,40 @@ $validationRules = [
             }
         }
 
-        // Crear horario para cada día seleccionado
-        foreach ($request->dias_semana as $dia) {
-            // Determinar aula y tipo de clase para este día
-            if ($usarConfiguracionPorDia && $configuracionDias) {
-                $configDia = collect($configuracionDias)->firstWhere('dia', (int)$dia);
-                $aulaId = $configDia['aula_id'] ?? $request->aula_id;
-                $tipoClase = $configDia['tipo_clase'] ?? $request->tipo_clase;
-            } else {
-                $aulaId = $request->aula_id;
-                $tipoClase = $request->tipo_clase;
-            }
+        // Mapeo de números a nombres de días
+        $diasNombresMap = [
+            1 => 'lunes',
+            2 => 'martes',
+            3 => 'miercoles',
+            4 => 'jueves',
+            5 => 'viernes',
+            6 => 'sabado',
+            7 => 'domingo'
+        ];
 
-            // Usar el método mejorado de validación de conflictos
+        // Convertir días numéricos a nombres
+        $diasSemana = array_map(function($dia) use ($diasNombresMap) {
+            return $diasNombresMap[(int)$dia] ?? 'lunes';
+        }, $request->dias_semana);
+
+        // Validar conflictos para todos los días
+        $hayConflictos = false;
+        foreach ($request->dias_semana as $dia) {
+            $diaNombre = $diasNombresMap[(int)$dia] ?? 'lunes';
+            
             $validacion = Horario::validarConflictos(
                 $request->carga_academica_id,
-                $aulaId,
-                $dia,
+                $request->aula_id,
+                $diaNombre,
                 $request->hora_inicio,
                 $request->hora_fin,
                 $request->periodo_academico
             );
 
             if (!$validacion['disponible']) {
-                $diasNombres = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+                $hayConflictos = true;
+                $diasNombresTexto = ['lunes' => 'Lunes', 'martes' => 'Martes', 'miercoles' => 'Miércoles', 
+                                     'jueves' => 'Jueves', 'viernes' => 'Viernes', 'sabado' => 'Sábado', 'domingo' => 'Domingo'];
                 $detallesConflicto = [];
                 
                 if ($validacion['conflicto_profesor']) {
@@ -118,27 +163,29 @@ $validationRules = [
                     $detallesConflicto[] = "Aula ocupada";
                 }
                 
-                $conflictos[] = $diasNombres[$dia] . ': ' . implode(' y ', $detallesConflicto);
-            } else {
-                // Crear el horario para este día
-                Horario::create([
-                    'carga_academica_id' => $request->carga_academica_id,
-                    'aula_id' => $aulaId,
-                    'dia_semana' => $dia,
-                    'hora_inicio' => $request->hora_inicio,
-                    'hora_fin' => $request->hora_fin,
-                    'duracion_horas' => $request->duracion_horas,
-                    'tipo_clase' => $tipoClase,
-                    'periodo_academico' => $request->periodo_academico,
-                    'es_semestral' => $request->has('es_semestral'),
-                    'fecha_inicio' => $request->fecha_inicio,
-                    'fecha_fin' => $request->fecha_fin,
-                    'semanas_duracion' => $request->semanas_duracion ?? 16,
-                    'configuracion_dias' => $configuracionDias,
-                    'usar_configuracion_por_dia' => $usarConfiguracionPorDia,
-                ]);
-                $horariosCreados++;
+                $conflictos[] = $diasNombresTexto[$diaNombre] . ': ' . implode(' y ', $detallesConflicto);
             }
+        }
+
+        // Si no hay conflictos, crear el horario con múltiples días
+        if (!$hayConflictos) {
+            Horario::create([
+                'carga_academica_id' => $request->carga_academica_id,
+                'aula_id' => $request->aula_id,
+                'dias_semana' => $diasSemana, // Array de nombres de días
+                'hora_inicio' => $request->hora_inicio,
+                'hora_fin' => $request->hora_fin,
+                'duracion_horas' => $request->duracion_horas,
+                'tipo_clase' => $request->tipo_clase,
+                'periodo_academico' => $request->periodo_academico,
+                'es_semestral' => $request->has('es_semestral'),
+                'fecha_inicio' => $request->fecha_inicio,
+                'fecha_fin' => $request->fecha_fin,
+                'semanas_duracion' => $request->semanas_duracion ?? 16,
+                'configuracion_dias' => $configuracionDias,
+                'usar_configuracion_por_dia' => $usarConfiguracionPorDia,
+            ]);
+            $horariosCreados = 1;
         }
 
         // Preparar mensaje de respuesta
@@ -173,6 +220,13 @@ $horario->load(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula
         $aulas = Aula::where('estado', 'disponible')->orderBy('codigo_aula')->get();
         $carreras = \App\Models\Carrera::with('facultad')->orderBy('nombre')->get();
         
+        // Obtener periodos académicos activos
+        $periodosAcademicos = \App\Models\PeriodoAcademico::where('estado', 'activo')
+                                                          ->orWhere('es_actual', true)
+                                                          ->orderBy('anio', 'desc')
+                                                          ->orderBy('semestre', 'desc')
+                                                          ->get();
+        
         // CU-12: Obtener todos los horarios de la misma carga académica (registros múltiples)
         $horariosMateria = Horario::with(['aula'])
                                  ->where('carga_academica_id', $horario->carga_academica_id)
@@ -188,7 +242,7 @@ $horario->load(['cargaAcademica.profesor', 'cargaAcademica.grupo.materia', 'aula
                                    ->orderBy('hora_inicio')
                                    ->get();
         
-        return view('admin.horarios.edit', compact('horario', 'cargasAcademicas', 'aulas', 'horariosExistentes', 'horariosMateria', 'carreras'));
+        return view('admin.horarios.edit', compact('horario', 'cargasAcademicas', 'aulas', 'horariosExistentes', 'horariosMateria', 'carreras', 'periodosAcademicos'));
     }
 
     public function update(Request $request, Horario $horario)
@@ -396,7 +450,7 @@ $horario->delete();
         $request->validate([
             'carga_academica_id' => 'required|exists:carga_academica,id',
             'aula_id' => 'required|exists:aulas,id',
-            'dia_semana' => 'required|integer|min:1|max:7',
+            'dia_semana' => 'required|string',
             'hora_inicio' => 'required|date_format:H:i',
             'hora_fin' => 'required|date_format:H:i|after:hora_inicio',
             'periodo_academico' => 'required|string|max:20',

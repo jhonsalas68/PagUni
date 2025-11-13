@@ -45,8 +45,38 @@ class Estudiante extends Model
         return $this->hasMany(Inscripcion::class);
     }
 
+    public function inscripcionesActivas(): HasMany
+    {
+        return $this->hasMany(Inscripcion::class)->where('estado', 'activo');
+    }
+
+    public function asistencias()
+    {
+        return $this->hasManyThrough(
+            AsistenciaEstudiante::class,
+            Inscripcion::class,
+            'estudiante_id',
+            'inscripcion_id'
+        );
+    }
+
     public function getNombreCompletoAttribute(): string
     {
         return $this->nombre . ' ' . $this->apellido;
+    }
+
+    public function calcularPromedioAsistencia(): float
+    {
+        $inscripciones = $this->inscripcionesActivas;
+        
+        if ($inscripciones->isEmpty()) {
+            return 0.0;
+        }
+
+        $totalPorcentaje = $inscripciones->sum(function ($inscripcion) {
+            return $inscripcion->calcularPorcentajeAsistencia();
+        });
+
+        return round($totalPorcentaje / $inscripciones->count(), 2);
     }
 }

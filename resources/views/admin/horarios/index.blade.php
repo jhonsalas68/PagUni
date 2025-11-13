@@ -7,11 +7,6 @@
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">Gestión de Horarios</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
-            <div class="btn-group me-2">
-                <a href="{{ route('admin.horarios.boleta') }}" class="btn btn-info">
-                    <i class="fas fa-file-alt"></i> Ver Boleta
-                </a>
-            </div>
             <a href="{{ route('admin.horarios.create') }}" class="btn btn-primary">
                 <i class="fas fa-plus"></i> Nuevo Horario
             </a>
@@ -30,6 +25,50 @@
             <h6 class="m-0 font-weight-bold text-primary">Lista de Horarios</h6>
         </div>
         <div class="card-body">
+            <!-- Filtros de búsqueda -->
+            <form method="GET" action="{{ route('admin.horarios.index') }}" class="mb-4">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="buscar" class="form-label">Buscar por Materia, Profesor o Aula</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="buscar" 
+                               name="buscar" 
+                               value="{{ request('buscar') }}" 
+                               placeholder="Ej: Cálculo, Juan Pérez, A-101">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="dia" class="form-label">Día de la Semana</label>
+                        <select class="form-select" id="dia" name="dia">
+                            <option value="">Todos los días</option>
+                            <option value="lunes" {{ request('dia') == 'lunes' ? 'selected' : '' }}>Lunes</option>
+                            <option value="martes" {{ request('dia') == 'martes' ? 'selected' : '' }}>Martes</option>
+                            <option value="miercoles" {{ request('dia') == 'miercoles' ? 'selected' : '' }}>Miércoles</option>
+                            <option value="jueves" {{ request('dia') == 'jueves' ? 'selected' : '' }}>Jueves</option>
+                            <option value="viernes" {{ request('dia') == 'viernes' ? 'selected' : '' }}>Viernes</option>
+                            <option value="sabado" {{ request('dia') == 'sabado' ? 'selected' : '' }}>Sábado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="tipo_clase" class="form-label">Tipo de Clase</label>
+                        <select class="form-select" id="tipo_clase" name="tipo_clase">
+                            <option value="">Todos</option>
+                            <option value="teorica" {{ request('tipo_clase') == 'teorica' ? 'selected' : '' }}>Teórica</option>
+                            <option value="practica" {{ request('tipo_clase') == 'practica' ? 'selected' : '' }}>Práctica</option>
+                            <option value="laboratorio" {{ request('tipo_clase') == 'laboratorio' ? 'selected' : '' }}>Laboratorio</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Buscar
+                        </button>
+                        <a href="{{ route('admin.horarios.index') }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Limpiar
+                        </a>
+                    </div>
+                </div>
+            </form>
+
             <div class="table-responsive">
                 <table class="table table-striped">
                     <thead>
@@ -132,7 +171,58 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Paginación -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="text-muted">
+                    Mostrando {{ $horarios->firstItem() ?? 0 }} a {{ $horarios->lastItem() ?? 0 }} 
+                    de {{ $horarios->total() }} horarios
+                </div>
+                <div>
+                    {{ $horarios->links() }}
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<style>
+/* Estilos para la paginación Bootstrap */
+.pagination {
+    margin: 0;
+}
+.pagination .page-link {
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #0d6efd;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+}
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+.pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    pointer-events: none;
+    background-color: #fff;
+    border-color: #dee2e6;
+}
+.pagination .page-link:hover {
+    color: #0a58ca;
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+}
+</style>
+
+<script>
+// Auto-scroll al inicio al cambiar de página
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.search.includes('page=')) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+});
+</script>
 @endsection

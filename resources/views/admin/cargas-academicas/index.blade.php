@@ -20,35 +20,85 @@
         </div>
     @endif
 
+    <!-- Filtros compactos -->
+    <div class="mb-3">
+        <form method="GET" action="{{ route('admin.cargas-academicas.index') }}" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <select name="carrera_id" class="form-select form-select-sm">
+                    <option value="">Todas las carreras</option>
+                    @foreach($carreras as $carrera)
+                        <option value="{{ $carrera->id }}" {{ request('carrera_id') == $carrera->id ? 'selected' : '' }}>
+                            {{ $carrera->nombre }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="periodo" class="form-select form-select-sm">
+                    <option value="">Todos los períodos</option>
+                    @foreach($periodos as $periodo)
+                        <option value="{{ $periodo }}" {{ request('periodo') == $periodo ? 'selected' : '' }}>
+                            {{ $periodo }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="estado" class="form-select form-select-sm">
+                    <option value="">Todos los estados</option>
+                    <option value="asignado" {{ request('estado') == 'asignado' ? 'selected' : '' }}>Asignado</option>
+                    <option value="pendiente" {{ request('estado') == 'pendiente' ? 'selected' : '' }}>Pendiente</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="profesor_id" class="form-select form-select-sm">
+                    <option value="">Todos los profesores</option>
+                    @foreach($profesores as $profesor)
+                        <option value="{{ $profesor->id }}" {{ request('profesor_id') == $profesor->id ? 'selected' : '' }}>
+                            {{ $profesor->nombre_completo }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-sm btn-primary w-100">
+                    <i class="fas fa-search"></i> Filtrar
+                </button>
+            </div>
+            @if(request()->hasAny(['carrera_id', 'periodo', 'estado', 'profesor_id']))
+            <div class="col-12">
+                <a href="{{ route('admin.cargas-academicas.index') }}" class="btn btn-sm btn-link">
+                    <i class="fas fa-times"></i> Limpiar filtros
+                </a>
+            </div>
+            @endif
+        </form>
+    </div>
+
     <div class="card shadow">
-        <div class="card-header">
-            <h6 class="m-0 font-weight-bold text-primary">Lista de Cargas Académicas</h6>
-        </div>
-        <div class="card-body">
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
+                <table class="table table-hover table-sm mb-0">
+                    <thead class="table-light">
                         <tr>
                             <th>Profesor</th>
-                            <th>Materia</th>
+                            <th>Materia / Carrera</th>
                             <th>Grupo</th>
                             <th>Período</th>
                             <th>Estado</th>
-                            <th>Horarios</th>
-                            <th>Acciones</th>
+                            <th class="text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($cargasAcademicas as $carga)
                         <tr>
                             <td>{{ $carga->profesor->nombre_completo ?? 'N/A' }}</td>
-                            <td>{{ $carga->grupo->materia->nombre ?? 'N/A' }}</td>
                             <td>
-                                <span class="badge bg-info">{{ $carga->grupo->identificador ?? 'N/A' }}</span>
+                                <div>{{ $carga->grupo->materia->nombre ?? 'N/A' }}</div>
+                                <small class="text-muted">{{ $carga->grupo->materia->carrera->nombre ?? 'N/A' }}</small>
                             </td>
-                            <td>
-                                <span class="badge bg-primary">{{ $carga->periodo }}</span>
-                            </td>
+                            <td><span class="badge bg-info">{{ $carga->grupo->identificador ?? 'N/A' }}</span></td>
+                            <td><span class="badge bg-primary">{{ $carga->periodo }}</span></td>
                             <td>
                                 @php
                                     $estadoColors = [
@@ -62,15 +112,12 @@
                                     {{ ucfirst($carga->estado) }}
                                 </span>
                             </td>
-                            <td>
-                                <span class="badge bg-secondary">{{ $carga->horarios->count() }} horarios</span>
-                            </td>
-                            <td>
-                                <div class="btn-group" role="group">
-                                    <a href="{{ route('admin.cargas-academicas.show', $carga) }}" class="btn btn-sm btn-info">
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ route('admin.cargas-academicas.show', $carga) }}" class="btn btn-info" title="Ver">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a href="{{ route('admin.cargas-academicas.edit', $carga) }}" class="btn btn-sm btn-warning">
+                                    <a href="{{ route('admin.cargas-academicas.edit', $carga) }}" class="btn btn-warning" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <form method="POST" action="{{ route('admin.cargas-academicas.destroy', $carga) }}" 
@@ -78,7 +125,7 @@
                                           onsubmit="return confirm('¿Eliminar esta carga académica?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger">
+                                        <button type="submit" class="btn btn-danger" title="Eliminar">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>
@@ -87,13 +134,58 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="text-center">No hay cargas académicas registradas.</td>
+                            <td colspan="6" class="text-center py-4 text-muted">No hay cargas académicas</td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
+        @if($cargasAcademicas->hasPages())
+        <div class="card-footer">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="text-muted">
+                        Mostrando {{ $cargasAcademicas->firstItem() ?? 0 }}-{{ $cargasAcademicas->lastItem() ?? 0 }} de {{ $cargasAcademicas->total() }}
+                    </small>
+                </div>
+                <div>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            {{-- Botón Anterior --}}
+                            @if ($cargasAcademicas->onFirstPage())
+                                <li class="page-item disabled">
+                                    <span class="page-link">← Anterior</span>
+                                </li>
+                            @else
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ $cargasAcademicas->appends(request()->query())->previousPageUrl() }}">← Anterior</a>
+                                </li>
+                            @endif
+
+                            {{-- Indicador de página --}}
+                            <li class="page-item disabled">
+                                <span class="page-link">
+                                    Página {{ $cargasAcademicas->currentPage() }} de {{ $cargasAcademicas->lastPage() }}
+                                </span>
+                            </li>
+
+                            {{-- Botón Siguiente --}}
+                            @if ($cargasAcademicas->hasMorePages())
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ $cargasAcademicas->appends(request()->query())->nextPageUrl() }}">Siguiente →</a>
+                                </li>
+                            @else
+                                <li class="page-item disabled">
+                                    <span class="page-link">Siguiente →</span>
+                                </li>
+                            @endif
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+        @endif
     </div>
 </div>
 @endsection

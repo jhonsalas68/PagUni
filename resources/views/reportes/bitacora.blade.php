@@ -31,6 +31,7 @@
                 </div>
                 <div class="card-body">
                     <form method="GET" action="{{ route('reportes.bitacora') }}">
+                        @csrf
                         <div class="row">
                             <div class="col-md-2">
                                 <div class="mb-3">
@@ -100,13 +101,23 @@
                         </div>
                         <div class="row">
                             <div class="col-12">
-                                <div class="d-grid d-md-flex justify-content-md-end">
-                                    <button type="submit" class="btn btn-primary me-2">
-                                        <i class="fas fa-search"></i> Filtrar
-                                    </button>
-                                    <a href="{{ route('reportes.bitacora') }}" class="btn btn-outline-secondary">
-                                        <i class="fas fa-times"></i> Limpiar
-                                    </a>
+                                <div class="d-flex justify-content-between flex-wrap gap-2">
+                                    <div>
+                                        <button type="submit" class="btn btn-primary me-2">
+                                            <i class="fas fa-search"></i> Filtrar
+                                        </button>
+                                        <a href="{{ route('reportes.bitacora') }}" class="btn btn-outline-secondary">
+                                            <i class="fas fa-times"></i> Limpiar
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <button type="submit" formaction="{{ route('reportes.bitacora-pdf') }}" formmethod="POST" class="btn btn-danger me-2">
+                                            <i class="fas fa-file-pdf"></i> Exportar PDF
+                                        </button>
+                                        <button type="submit" formaction="{{ route('reportes.bitacora-excel') }}" formmethod="POST" class="btn btn-success">
+                                            <i class="fas fa-file-excel"></i> Exportar Excel
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -409,12 +420,15 @@
                                     <tr>
                                         <td>
                                             <small>
-                                                {{ $actividad->created_at->format('d/m/Y') }}<br>
-                                                <strong>{{ $actividad->created_at->format('H:i:s') }}</strong>
+                                                {{ \Carbon\Carbon::parse($actividad->fecha)->format('d/m/Y') }}<br>
+                                                <strong>{{ $actividad->hora_entrada ?? 'N/A' }}</strong>
                                             </small>
                                         </td>
                                         <td>
-                                            <strong>{{ $actividad->horario->cargaAcademica->profesor->nombre_completo ?? 'N/A' }}</strong>
+                                            <strong>
+                                                {{ $actividad->profesor->nombre ?? '' }} 
+                                                {{ $actividad->profesor->apellido ?? 'N/A' }}
+                                            </strong>
                                         </td>
                                         <td>
                                             @if($actividad->qr_token)
@@ -453,8 +467,8 @@
                                                 @case('falta')
                                                     <span class="badge bg-danger">Falta</span>
                                                     @break
-                                                @case('justificada')
-                                                    <span class="badge bg-secondary">Justificada</span>
+                                                @case('justificado')
+                                                    <span class="badge bg-info">Justificado</span>
                                                     @break
                                                 @case('pendiente_qr')
                                                     <span class="badge bg-primary">Pendiente QR</span>
@@ -502,8 +516,25 @@
 
                     <!-- Paginación -->
                     @if($actividades->hasPages())
-                        <div class="d-flex justify-content-center">
-                            {{ $actividades->appends(request()->query())->links() }}
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                            <small class="text-muted">
+                                {{ $actividades->firstItem() ?? 0 }}-{{ $actividades->lastItem() ?? 0 }} de {{ $actividades->total() }}
+                            </small>
+                            <nav>
+                                <ul class="pagination pagination-sm mb-0">
+                                    @if ($actividades->onFirstPage())
+                                        <li class="page-item disabled"><span class="page-link">‹ Anterior</span></li>
+                                    @else
+                                        <li class="page-item"><a class="page-link" href="{{ $actividades->appends(request()->query())->previousPageUrl() }}">‹ Anterior</a></li>
+                                    @endif
+                                    <li class="page-item disabled"><span class="page-link">Pág. {{ $actividades->currentPage() }} de {{ $actividades->lastPage() }}</span></li>
+                                    @if ($actividades->hasMorePages())
+                                        <li class="page-item"><a class="page-link" href="{{ $actividades->appends(request()->query())->nextPageUrl() }}">Siguiente ›</a></li>
+                                    @else
+                                        <li class="page-item disabled"><span class="page-link">Siguiente ›</span></li>
+                                    @endif
+                                </ul>
+                            </nav>
                         </div>
                     @endif
                 </div>

@@ -92,15 +92,27 @@
 </div>
 
 <script>
+// Bandera para evitar peticiones duplicadas
+let confirmacionEnviada = false;
+
 function confirmarAsistencia() {
+    console.log('🔄 Iniciando confirmación de asistencia...');
+    
+    // Verificar si ya se envió
+    if (confirmacionEnviada) {
+        console.log('⚠️ Ya se envió una confirmación, ignorando...');
+        return;
+    }
+    
     // Deshabilitar botón para evitar doble clic
     const boton = document.querySelector('button[onclick="confirmarAsistencia()"]');
     boton.disabled = true;
     boton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Confirmando...';
 
-    // Obtener ubicación si es posible
+    // Obtener ubicación si es posible (con timeout corto)
     let ubicacion = null;
     if (navigator.geolocation) {
+        console.log('📍 Solicitando ubicación...');
         navigator.geolocation.getCurrentPosition(
             function(position) {
                 ubicacion = {
@@ -108,32 +120,59 @@ function confirmarAsistencia() {
                     longitude: position.coords.longitude,
                     accuracy: position.coords.accuracy
                 };
+                console.log('✅ Ubicación obtenida:', ubicacion);
                 enviarConfirmacion(ubicacion);
             },
             function(error) {
-                console.log('Error obteniendo ubicación:', error);
+                console.log('⚠️ Error obteniendo ubicación:', error.message);
                 enviarConfirmacion(null);
             },
-            { timeout: 5000 }
+            { timeout: 3000, enableHighAccuracy: false }
         );
     } else {
+        console.log('⚠️ Geolocalización no disponible');
         enviarConfirmacion(null);
     }
 }
 
 function enviarConfirmacion(ubicacion) {
-    fetch('{{ route("profesor.confirmar-qr", ["token" => $token]) }}', {
+    // Verificar si ya se envió
+    if (confirmacionEnviada) {
+        console.log('⚠️ Confirmación ya enviada, ignorando petición duplicada...');
+        return;
+    }
+    
+    // Marcar como enviada
+    confirmacionEnviada = true;
+    
+    console.log('📤 Enviando confirmación al servidor...');
+    
+    const url = '{{ route("profesor.confirmar-qr", ["token" => $token]) }}';
+    const token = '{{ csrf_token() }}';
+    
+    console.log('URL:', url);
+    console.log('Token CSRF:', token ? 'Presente' : 'Faltante');
+    
+    fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            'X-CSRF-TOKEN': token,
+            'Accept': 'application/json'
         },
         body: JSON.stringify({
             ubicacion: ubicacion
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('📥 Respuesta recibida:', response.status, response.statusText);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
     .then(data => {
+        console.log('📊 Datos recibidos:', data);
         const modal = new bootstrap.Modal(document.getElementById('resultadoModal'));
         const modalHeader = document.getElementById('modalHeader');
         const modalTitulo = document.getElementById('modalTitulo');
@@ -152,8 +191,32 @@ function enviarConfirmacion(ubicacion) {
                         <p><strong>Hora de entrada:</strong> ${data.data.hora_entrada}</p>
                         ${!data.data.validado_en_horario ? '<p class="text-warning"><i class="fas fa-exclamation-triangle"></i> Registrado con tardanza</p>' : ''}
                     </div>
+                    <div class="mt-3">
+                        <p class="text-muted">Esta ventana se cerrará automáticamente en <span id="countdown">3</span> segundos...</p>
+                    </div>
                 </div>
             `;
+            
+            // Mostrar modal
+            modal.show();
+            
+            // Cerrar automáticamente después de 3 segundos
+            let segundos = 3;
+            const countdownElement = document.getElementById('countdown');
+            const intervalo = setInterval(() => {
+                segundos--;
+                if (countdownElement) {
+                    countdownElement.textContent = segundos;
+                }
+                if (segundos <= 0) {
+                    clearInterval(intervalo);
+                    window.close();
+                    // Si window.close() no funciona (por restricciones del navegador)
+                    setTimeout(() => {
+                        window.location.href = 'about:blank';
+                    }, 100);
+                }
+            }, 1000);
         } else {
             modalHeader.className = 'modal-header bg-danger text-white';
             modalTitulo.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error';
@@ -164,12 +227,24 @@ function enviarConfirmacion(ubicacion) {
                     <p class="text-danger">${data.error}</p>
                 </div>
             `;
+            
+            // Mostrar modal de error
+            modal.show();
         }
-
-        modal.show();
     })
     .catch(error => {
-        console.error('Error:', error);
+        console.error('💥 Error en fetch:', error);
+        
+        // Permitir reintentar
+        confirmacionEnviada = false;
+        
+        // Rehabilitar botón
+        const boton = document.querySelector('button[onclick="confirmarAsistencia()"]');
+        if (boton) {
+            boton.disabled = false;
+            boton.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Mi Asistencia';
+        }
+        
         const modal = new bootstrap.Modal(document.getElementById('resultadoModal'));
         const modalHeader = document.getElementById('modalHeader');
         const modalTitulo = document.getElementById('modalTitulo');
@@ -181,12 +256,23 @@ function enviarConfirmacion(ubicacion) {
             <div class="text-center">
                 <i class="fas fa-wifi fa-3x text-danger mb-3"></i>
                 <h5>Error de conexión</h5>
-                <p>No se pudo conectar con el servidor. Verifica tu conexión a internet.</p>
+                <p class="text-danger">${error.message}</p>
+                <p class="text-muted">No se pudo conectar con el servidor. Verifica tu conexión a internet.</p>
+                <button class="btn btn-primary mt-3" onclick="location.reload()">
+                    <i class="fas fa-sync-alt"></i> Reintentar
+                </button>
             </div>
         `;
 
         modal.show();
     });
 }
+
+// Verificar que Bootstrap esté cargado
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ Página cargada');
+    console.log('Bootstrap disponible:', typeof bootstrap !== 'undefined');
+    console.log('Token CSRF:', document.querySelector('meta[name="csrf-token"]') ? 'Presente' : 'Faltante');
+});
 </script>
 @endsection

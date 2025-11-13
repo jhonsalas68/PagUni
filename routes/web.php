@@ -99,6 +99,13 @@ Route::middleware(['web'])->group(function () {
         Route::post('feriados/verificar-fecha', [\App\Http\Controllers\Admin\FeriadoController::class, 'verificarFecha'])->name('feriados.verificar-fecha');
         Route::get('feriados/dias-lectivos', [\App\Http\Controllers\Admin\FeriadoController::class, 'diasLectivos'])->name('feriados.dias-lectivos');
         
+        // Gestión de Periodos Académicos
+        Route::resource('periodos-academicos', \App\Http\Controllers\Admin\PeriodoAcademicoController::class);
+        Route::patch('periodos-academicos/{periodoAcademico}/marcar-actual', [\App\Http\Controllers\Admin\PeriodoAcademicoController::class, 'marcarActual'])->name('periodos-academicos.marcar-actual');
+        
+        // Gestión de Justificaciones
+        Route::get('justificaciones', [\App\Http\Controllers\Admin\JustificacionController::class, 'index'])->name('justificaciones.index');
+        
         // Panel de Control de Asistencias
         Route::get('panel-asistencia', [\App\Http\Controllers\PanelAsistenciaController::class, 'panelControlDia'])->name('panel-asistencia');
         Route::get('panel-asistencia/api/tiempo-real', [\App\Http\Controllers\PanelAsistenciaController::class, 'apiEstadoTiempoReal'])->name('panel-asistencia.tiempo-real');
@@ -124,9 +131,27 @@ Route::middleware(['web'])->group(function () {
 
     // Rutas del Estudiante
     Route::prefix('estudiante')->name('estudiante.')->middleware('auth.session:estudiante')->group(function () {
-        Route::get('/dashboard', function () {
-            return view('estudiante.dashboard');
-        })->name('dashboard');
+        Route::get('/dashboard', [\App\Http\Controllers\EstudianteController::class, 'dashboard'])->name('dashboard');
+        
+        // Inscripciones
+        Route::get('/inscripciones', [\App\Http\Controllers\InscripcionController::class, 'index'])->name('inscripciones.index');
+        Route::post('/inscripciones', [\App\Http\Controllers\InscripcionController::class, 'store'])->name('inscripciones.store');
+        Route::delete('/inscripciones/{inscripcion}', [\App\Http\Controllers\InscripcionController::class, 'destroy'])->name('inscripciones.destroy');
+        
+        // Mis Materias
+        Route::get('/mis-materias', [\App\Http\Controllers\InscripcionController::class, 'misInscripciones'])->name('mis-materias');
+        
+        // Asistencias
+        Route::get('/asistencia/marcar', [\App\Http\Controllers\AsistenciaEstudianteController::class, 'mostrarClasesHoy'])->name('asistencia.escaner');
+        Route::post('/asistencia/marcar', [\App\Http\Controllers\AsistenciaEstudianteController::class, 'marcarAsistencia'])->name('asistencia.marcar');
+        Route::get('/asistencia/historial', [\App\Http\Controllers\AsistenciaEstudianteController::class, 'historial'])->name('asistencia.historial');
+    });
+
+    // Rutas de Admin para Periodos de Inscripción
+    Route::prefix('admin')->name('admin.')->middleware('auth.session:administrador')->group(function () {
+        Route::resource('periodos-inscripcion', \App\Http\Controllers\Admin\PeriodoInscripcionController::class);
+        Route::post('periodos-inscripcion/{periodo}/activar', [\App\Http\Controllers\Admin\PeriodoInscripcionController::class, 'activar'])->name('periodos-inscripcion.activar');
+        Route::post('periodos-inscripcion/{periodo}/desactivar', [\App\Http\Controllers\Admin\PeriodoInscripcionController::class, 'desactivar'])->name('periodos-inscripcion.desactivar');
     });
 
     // Rutas de Consulta de Aulas (Públicas)

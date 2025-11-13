@@ -25,6 +25,37 @@
             <h6 class="m-0 font-weight-bold text-primary">Lista de Grupos</h6>
         </div>
         <div class="card-body">
+            <!-- Filtros de búsqueda -->
+            <form method="GET" action="{{ route('admin.grupos.index') }}" class="mb-4">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label for="buscar" class="form-label">Buscar por Identificador o Materia</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="buscar" 
+                               name="buscar" 
+                               value="{{ request('buscar') }}" 
+                               placeholder="Ej: A, Cálculo, MAT-101">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="estado" class="form-label">Estado</label>
+                        <select class="form-select" id="estado" name="estado">
+                            <option value="">Todos los estados</option>
+                            <option value="activo" {{ request('estado') == 'activo' ? 'selected' : '' }}>Activo</option>
+                            <option value="inactivo" {{ request('estado') == 'inactivo' ? 'selected' : '' }}>Inactivo</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Buscar
+                        </button>
+                        <a href="{{ route('admin.grupos.index') }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Limpiar
+                        </a>
+                    </div>
+                </div>
+            </form>
+
             <div class="table-responsive">
                 <table class="table table-striped">
                     <thead>
@@ -77,7 +108,58 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Paginación -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="text-muted">
+                    Mostrando {{ $grupos->firstItem() ?? 0 }} a {{ $grupos->lastItem() ?? 0 }} 
+                    de {{ $grupos->total() }} grupos
+                </div>
+                <div>
+                    {{ $grupos->links() }}
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<style>
+/* Estilos para la paginación Bootstrap */
+.pagination {
+    margin: 0;
+}
+.pagination .page-link {
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #0d6efd;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+}
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+.pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    pointer-events: none;
+    background-color: #fff;
+    border-color: #dee2e6;
+}
+.pagination .page-link:hover {
+    color: #0a58ca;
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+}
+</style>
+
+<script>
+// Auto-scroll al inicio al cambiar de página
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.search.includes('page=')) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+});
+</script>
 @endsection

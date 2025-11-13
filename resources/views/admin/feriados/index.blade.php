@@ -221,8 +221,23 @@
 
                     <!-- Paginación -->
                     @if($feriados->hasPages())
-                    <div class="d-flex justify-content-center">
-                        {{ $feriados->links() }}
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                        <small class="text-muted">{{ $feriados->firstItem() ?? 0 }}-{{ $feriados->lastItem() ?? 0 }} de {{ $feriados->total() }}</small>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0">
+                                @if ($feriados->onFirstPage())
+                                    <li class="page-item disabled"><span class="page-link">‹ Anterior</span></li>
+                                @else
+                                    <li class="page-item"><a class="page-link" href="{{ $feriados->previousPageUrl() }}">‹ Anterior</a></li>
+                                @endif
+                                <li class="page-item disabled"><span class="page-link">Pág. {{ $feriados->currentPage() }} de {{ $feriados->lastPage() }}</span></li>
+                                @if ($feriados->hasMorePages())
+                                    <li class="page-item"><a class="page-link" href="{{ $feriados->nextPageUrl() }}">Siguiente ›</a></li>
+                                @else
+                                    <li class="page-item disabled"><span class="page-link">Siguiente ›</span></li>
+                                @endif
+                            </ul>
+                        </nav>
                     </div>
                     @endif
                 </div>
