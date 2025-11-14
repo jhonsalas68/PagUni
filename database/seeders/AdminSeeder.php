@@ -65,18 +65,6 @@ class AdminSeeder extends Seeder
             'nivel_acceso' => 'admin'
         ]);
 
-        // Administrador de Pruebas (para desarrollo)
-        Administrador::create([
-            'codigo_admin' => 'ADMIN999',
-            'nombre' => 'Test',
-            'apellido' => 'Administrator',
-            'email' => 'test@uagrm.edu.bo',
-            'cedula' => '99999999',
-            'telefono' => '3-9999999',
-            'password' => 'test123',
-            'nivel_acceso' => 'super_admin'
-        ]);
-
         $this->command->info('✅ Administradores creados exitosamente!');
         $this->command->newLine();
         $this->command->info('📋 CREDENCIALES DE ACCESO:');
