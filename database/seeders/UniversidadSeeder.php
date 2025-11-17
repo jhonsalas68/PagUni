@@ -291,32 +291,34 @@ class UniversidadSeeder extends Seeder
         $grupo4A = Grupo::where('materia_id', $materia3->id)->where('identificador', 'A')->first();
 
 
+// ... todo lo que ya tenías arriba sigue igual ...
+
         // Verificar y crear Cargas Académicas usando firstOrCreate en base a profesor, grupo y periodo
         if ($profesor1 && $grupo1A) {
             CargaAcademica::firstOrCreate(
                 ['profesor_id' => $profesor1->id, 'grupo_id' => $grupo1A->id, 'periodo' => '2024-2'],
-                ['estado' => 'asignado']
+                ['estado' => 'asignado', 'periodo_academico' => '2024-2']
             );
         }
-        
+
         if ($profesor1 && $grupo3A) {
             CargaAcademica::firstOrCreate(
                 ['profesor_id' => $profesor1->id, 'grupo_id' => $grupo3A->id, 'periodo' => '2024-2'],
-                ['estado' => 'asignado']
+                ['estado' => 'asignado', 'periodo_academico' => '2024-2']
             );
         }
 
         if ($profesor2 && $grupo4A) {
             CargaAcademica::firstOrCreate(
                 ['profesor_id' => $profesor2->id, 'grupo_id' => $grupo4A->id, 'periodo' => '2024-2'],
-                ['estado' => 'asignado']
+                ['estado' => 'asignado', 'periodo_academico' => '2024-2']
             );
         }
 
         if ($profesor2 && $grupo1B) {
             CargaAcademica::firstOrCreate(
                 ['profesor_id' => $profesor2->id, 'grupo_id' => $grupo1B->id, 'periodo' => '2024-2'],
-                ['estado' => 'asignado']
+                ['estado' => 'asignado', 'periodo_academico' => '2024-2']
             );
         }
     }
