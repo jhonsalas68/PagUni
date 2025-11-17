@@ -23,7 +23,20 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call([
-            UniversidadSeeder::class,
+            AdminSeeder::class,
+        AsistenciasDocenteSeeder::class,
+        AsistenciasOctubreSeeder::class,
+        DatosEjemploSeeder::class,
+        EstudiantesTestSeeder::class,
+        FICCTCompletaSeeder::class,
+        GruposYCargasSeeder::class,
+        HorarioTestSeeder::class,
+        IngenieriaSistemasSeeder::class,
+        InscripcionesTestSeeder::class,
+        MateriasCompletasSeeder::class,
+        PeriodosAcademicosSeeder::class,
+        Semestre2024_2Seeder::class,
+        UniversidadSeeder::class,
         ]);
     }
 }
