@@ -1,9 +1,10 @@
+# Archivos de desarrollo
 /vendor
 /node_modules
-/storage/logs
-/storage/framework/cache
-/storage/framework/sessions
-/storage/framework/views
+/storage/logs/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
 .env
 .env.backup
 .phpunit.result.cache
@@ -12,8 +13,17 @@ Homestead.yaml
 npm-debug.log
 yarn-error.log
 *.log
+
+# Archivos de prueba y desarrollo
 /tests
-/database/seeders
 *.php
-!api/index.php
 !public/index.php
+!bootstrap/app.php
+!config/*.php
+!app/**/*.php
+!routes/*.php
+!database/migrations/*.php
+
+# Backups
+composer.json.backup
+composer.vercel.json
