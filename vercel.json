@@ -3,24 +3,13 @@
   "builds": [
     {
       "src": "public/index.php",
-      "use": "vercel-php@0.7.1",
-      "config": {
-        "includeFiles": "**"
-      }
+      "use": "vercel-php@0.7.1"
     }
   ],
   "routes": [
     {
-      "src": "/css/(.*)",
-      "dest": "/public/css/$1"
-    },
-    {
-      "src": "/js/(.*)",
-      "dest": "/public/js/$1"
-    },
-    {
-      "src": "/images/(.*)",
-      "dest": "/public/images/$1"
+      "src": "/(css|js|images|fonts)/(.*)",
+      "dest": "/public/$1/$2"
     },
     {
       "src": "/(.*)",
@@ -28,12 +17,10 @@
     }
   ],
   "env": {
-    "APP_NAME": "Sistema Universitario FICCT",
     "APP_ENV": "production",
     "APP_DEBUG": "false",
     "APP_KEY": "base64:vhyFGfuZypDI5i0SaA+4HWjR/hGpiwDxCKIqHZ7w0D8=",
     "APP_URL": "https://pag-uni.vercel.app",
-    "APP_TIMEZONE": "America/La_Paz",
     "DB_CONNECTION": "pgsql",
     "DB_HOST": "ep-calm-glitter-adgesoqd-pooler.c-2.us-east-1.aws.neon.tech",
     "DB_PORT": "5432",
@@ -44,7 +31,6 @@
     "SESSION_DRIVER": "array",
     "CACHE_DRIVER": "array",
     "QUEUE_CONNECTION": "sync",
-    "LOG_CHANNEL": "stderr",
-    "LOG_LEVEL": "error"
+    "LOG_CHANNEL": "stderr"
   }
 }

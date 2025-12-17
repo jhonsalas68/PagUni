@@ -1,29 +1,50 @@
-# Archivos de desarrollo
+# Development files
 /vendor
 /node_modules
-/storage/logs/*
-/storage/framework/cache/*
-/storage/framework/sessions/*
-/storage/framework/views/*
 .env
 .env.backup
+.env.production
+.env.local
 .phpunit.result.cache
 Homestead.json
 Homestead.yaml
+auth.json
 npm-debug.log
 yarn-error.log
-*.log
 
-# Archivos de prueba y desarrollo
+# Storage (runtime)
+/storage/logs/*
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/framework/testing/*
+
+# Tests and development
 /tests
+phpunit.xml
+.phpunit.cache
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+/public/hot
+/public/storage
+/public/build
+
+# Development scripts (keep Laravel core files)
 *.php
 !public/index.php
-!bootstrap/app.php
+!bootstrap/*.php
 !config/*.php
 !app/**/*.php
 !routes/*.php
-!database/migrations/*.php
+!database/**/*.php
 
-# Backups
+# Backups and temp files
 composer.json.backup
-composer.vercel.json
+*.backup
+*.tmp
