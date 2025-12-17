@@ -13,27 +13,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->alias([
-            'auth.session' => \App\Http\Middleware\AuthenticateSession::class,
-            'update.online.status' => \App\Http\Middleware\UpdateUserOnlineStatus::class,
-        ]);
-        
-        // Agregar middleware global para actualizar estado en línea
-        $middleware->web(append: [
-            \App\Http\Middleware\UpdateUserOnlineStatus::class,
-        ]);
-        
-        // Usar nuestro middleware CSRF personalizado
-        $middleware->validateCsrfTokens(except: [
-            'logout',
-        ]);
+        //
     })
-
-
-    
-    ->withProviders([
-        App\Providers\NeonDatabaseServiceProvider::class,
-    ])
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
