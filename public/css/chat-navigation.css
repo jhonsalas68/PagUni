@@ -1,0 +1,104 @@
+/* Estilos para navegación del chat */
+
+#chat-header {
+    transition: all 0.3s ease;
+}
+
+#back-to-conversations, #close-chat {
+    transition: all 0.2s ease;
+}
+
+#back-to-conversations:hover, #close-chat:hover {
+    transform: scale(1.05);
+}
+
+#close-chat:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+/* Responsive para móviles */
+@media (max-width: 767.98px) {
+    .col-md-4.d-none {
+        display: none !important;
+    }
+    
+    .col-md-8.d-none {
+        display: none !important;
+    }
+    
+    .col-md-4:not(.d-none) {
+        width: 100% !important;
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+    
+    .col-md-8:not(.d-none) {
+        width: 100% !important;
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+/* Animaciones suaves */
+.conversation-item {
+    transition: background-color 0.2s ease;
+}
+
+.conversation-item:hover {
+    background-color: #f8f9fa !important;
+}
+
+.conversation-item.active {
+    background-color: #e3f2fd !important;
+    border-left: 3px solid #2196f3;
+}
+
+/* Indicador de carga */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Botones de acción */
+.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+/* Mejoras visuales para el header */
+#chat-title h6 {
+    margin-bottom: 0;
+    font-weight: 600;
+}
+
+#chat-title small {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+/* Estados de conexión */
+.badge.bg-success {
+    background-color: #28a745 !important;
+}
+
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+/* Responsive text */
+@media (max-width: 576px) {
+    #chat-title h6 {
+        font-size: 0.9rem;
+    }
+    
+    #chat-title small {
+        font-size: 0.7rem;
+    }
+}

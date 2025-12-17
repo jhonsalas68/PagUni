@@ -20,6 +20,7 @@ class Materia extends Model
         'carrera_id',
         'horas_teoricas',
         'horas_practicas',
+        'estado',
     ];
 
     public function carrera(): BelongsTo
@@ -35,5 +36,10 @@ class Materia extends Model
     public function grupos(): HasMany
     {
         return $this->hasMany(Grupo::class);
+    }
+
+    public function cargasAcademicas(): HasMany
+    {
+        return $this->hasMany(CargaAcademica::class);
     }
 }

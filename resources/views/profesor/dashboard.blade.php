@@ -23,6 +23,9 @@
                         <a href="{{ route('profesor.historial-asistencias') }}" class="btn btn-outline-secondary">
                             <i class="fas fa-history"></i> Historial
                         </a>
+                        <a href="{{ route('chat.index') }}" class="btn btn-primary">
+                            <i class="fas fa-comments"></i> Mensajes
+                        </a>
                     </div>
                 </div>
             </div>

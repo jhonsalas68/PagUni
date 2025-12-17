@@ -39,6 +39,9 @@ Route::middleware(['web'])->group(function () {
         Route::get('/bitacora', [\App\Http\Controllers\ReporteController::class, 'bitacora'])->name('bitacora');
         Route::post('/bitacora-pdf', [\App\Http\Controllers\ReporteController::class, 'bitacoraPDF'])->name('bitacora-pdf');
         Route::post('/bitacora-excel', [\App\Http\Controllers\ReporteController::class, 'bitacoraExcel'])->name('bitacora-excel');
+        Route::get('/rendimiento', [\App\Http\Controllers\ReporteController::class, 'reporteRendimiento'])->name('rendimiento');
+        Route::post('/rendimiento-pdf', [\App\Http\Controllers\ReporteController::class, 'reporteRendimientoPDF'])->name('rendimiento-pdf');
+        Route::post('/rendimiento-excel', [\App\Http\Controllers\ReporteController::class, 'reporteRendimientoExcel'])->name('rendimiento-excel');
     });
 
     // Rutas del Administrador
@@ -71,9 +74,19 @@ Route::middleware(['web'])->group(function () {
         // Gestión de Cargas Académicas
         Route::resource('cargas-academicas', \App\Http\Controllers\Admin\CargaAcademicaController::class)->parameters(['cargas-academicas' => 'cargaAcademica']);
         
+        // Generador Automático de Cargas
+        Route::get('cargas-academicas-generar', [\App\Http\Controllers\Admin\CargaAcademicaController::class, 'vistaGenerador'])->name('cargas-academicas.generador');
+        Route::post('cargas-academicas-generar', [\App\Http\Controllers\Admin\CargaAcademicaController::class, 'generarAutomatico'])->name('cargas-academicas.generador.store');
+        
         // Gestión de Horarios
         Route::get('horarios/boleta', [\App\Http\Controllers\Admin\HorarioController::class, 'boleta'])->name('horarios.boleta');
+        // Generador Automático (Debe ir antes del resource)
+        Route::get('horarios/generar', [\App\Http\Controllers\HorarioGeneradorController::class, 'index'])->name('horarios.generador.index');
+        Route::get('horarios/generar/stats', [\App\Http\Controllers\HorarioGeneradorController::class, 'stats'])->name('horarios.generador.stats');
+        Route::post('horarios/generar', [\App\Http\Controllers\HorarioGeneradorController::class, 'store'])->name('horarios.generador.store');
+
         Route::resource('horarios', \App\Http\Controllers\Admin\HorarioController::class);
+
         Route::post('horarios/validar-disponibilidad', [\App\Http\Controllers\Admin\HorarioController::class, 'validarDisponibilidad'])->name('horarios.validar-disponibilidad');
         Route::post('horarios/{horario}/validar-cambios-cu12', [\App\Http\Controllers\Admin\HorarioController::class, 'validarCambiosCU12'])->name('horarios.validar-cambios-cu12');
         Route::post('horarios/{horario}/sugerir-alternativas', [\App\Http\Controllers\Admin\HorarioController::class, 'sugerirAlternativas'])->name('horarios.sugerir-alternativas');
@@ -127,6 +140,21 @@ Route::middleware(['web'])->group(function () {
         Route::get('/historial-asistencias', [\App\Http\Controllers\ProfesorController::class, 'historialAsistencias'])->name('historial-asistencias');
         Route::get('/mi-horario', [\App\Http\Controllers\ProfesorController::class, 'miHorario'])->name('mi-horario');
         Route::post('/justificar-asistencia', [\App\Http\Controllers\ProfesorController::class, 'justificarAsistencia'])->name('justificar-asistencia');
+        
+        // Gestión de Calificaciones
+        Route::prefix('calificaciones')->name('calificaciones.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\CalificacionController::class, 'indexDocente'])->name('index');
+            Route::get('/{grupo}/resumen', [\App\Http\Controllers\CalificacionController::class, 'resumen'])->name('resumen');
+            Route::get('/{grupo}/resumen/pdf', [\App\Http\Controllers\CalificacionController::class, 'imprimirResumen'])->name('resumen.pdf');
+            Route::get('/gestion/{grupo}', [\App\Http\Controllers\CalificacionController::class, 'gestionNotas'])->name('gestion');
+            Route::post('/', [\App\Http\Controllers\CalificacionController::class, 'store'])->name('store');
+            
+            // Criterios de Evaluación
+            Route::post('/{grupo}/criterios', [\App\Http\Controllers\CalificacionController::class, 'storeCriterio'])->name('criterios.store');
+            Route::put('/criterios/{criterio}', [\App\Http\Controllers\CalificacionController::class, 'updateCriterio'])->name('criterios.update');
+            Route::delete('/criterios/{criterio}', [\App\Http\Controllers\CalificacionController::class, 'destroyCriterio'])->name('criterios.destroy');
+            Route::post('/{grupo}/criterios/defaults', [\App\Http\Controllers\CalificacionController::class, 'loadDefaultCriterios'])->name('criterios.defaults');
+        });
     });
 
     // Rutas del Estudiante
@@ -145,6 +173,9 @@ Route::middleware(['web'])->group(function () {
         Route::get('/asistencia/marcar', [\App\Http\Controllers\AsistenciaEstudianteController::class, 'mostrarClasesHoy'])->name('asistencia.escaner');
         Route::post('/asistencia/marcar', [\App\Http\Controllers\AsistenciaEstudianteController::class, 'marcarAsistencia'])->name('asistencia.marcar');
         Route::get('/asistencia/historial', [\App\Http\Controllers\AsistenciaEstudianteController::class, 'historial'])->name('asistencia.historial');
+        
+        // Calificaciones
+        Route::get('/calificaciones', [\App\Http\Controllers\CalificacionController::class, 'indexEstudiante'])->name('calificaciones.index');
     });
 
     // Rutas de Admin para Periodos de Inscripción
@@ -160,4 +191,45 @@ Route::middleware(['web'])->group(function () {
         Route::get('/aulas/{aula}/horario', [\App\Http\Controllers\AulaConsultaController::class, 'consultarHorario'])->name('aulas.horario');
         Route::get('/aulas/{aula}/api/ocupacion', [\App\Http\Controllers\AulaConsultaController::class, 'apiConsultarOcupacion'])->name('aulas.api-ocupacion');
     });
+
+    // Rutas de Chat (Universal para todos los roles autenticados)
+    Route::prefix('chat')->name('chat.')->group(function () {
+        // Chat Search
+        Route::get('users/options', [\App\Http\Controllers\ChatController::class, 'getSearchOptions'])->name('users.options');
+        Route::get('users/search', [\App\Http\Controllers\ChatController::class, 'searchUsers'])->name('users.search');
+        Route::get('users/online', [\App\Http\Controllers\ChatController::class, 'getOnlineUsers'])->name('users.online');
+        
+        // Chat CRUD
+        Route::get('/', [\App\Http\Controllers\ChatController::class, 'index'])->name('index');
+        Route::get('/{id}', [\App\Http\Controllers\ChatController::class, 'show'])->name('show');
+        Route::post('/', [\App\Http\Controllers\ChatController::class, 'store'])->name('store');
+        Route::post('/create', [\App\Http\Controllers\ChatController::class, 'createConversation'])->name('create');
+        Route::post('/create-group', [\App\Http\Controllers\ChatController::class, 'createGroupConversation'])->name('create-group');
+        
+        // Online Status
+        Route::post('/status', [\App\Http\Controllers\ChatController::class, 'updateOnlineStatus'])->name('status');
+    });
+
+    // Rutas para Push Notifications
+    Route::get('/push/vapid-public-key', [\App\Http\Controllers\PushSubscriptionController::class, 'publicKey'])->name('push.public-key');
+    Route::post('/push/subscribe', [\App\Http\Controllers\PushSubscriptionController::class, 'store'])->name('push.subscribe');
+    Route::post('/push/unsubscribe', [\App\Http\Controllers\PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
+    Route::post('/push/test', [\App\Http\Controllers\PushSubscriptionController::class, 'testNotification'])->name('push.test');
+});
+
+
+// RUTA TEMPORAL PARA PROBAR REPORTE DE RENDIMIENTO
+Route::get('/test-rendimiento', function() {
+    try {
+        $controller = new \App\Http\Controllers\ReporteController();
+        $request = new \Illuminate\Http\Request();
+        return $controller->reporteRendimiento($request);
+    } catch (Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'line' => $e->getLine(),
+            'file' => $e->getFile(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
 });

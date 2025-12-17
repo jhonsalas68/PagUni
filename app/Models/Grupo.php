@@ -14,6 +14,7 @@ class Grupo extends Model
     protected $fillable = [
         'identificador',
         'materia_id',
+        'periodo_academico',
         'capacidad_maxima',
         'estado',
         'cupo_maximo',
@@ -43,6 +44,11 @@ class Grupo extends Model
     public function inscripcionesActivas(): HasMany
     {
         return $this->hasMany(Inscripcion::class)->where('estado', 'activo');
+    }
+
+    public function tiposEvaluacion(): HasMany
+    {
+        return $this->hasMany(TipoEvaluacion::class);
     }
 
     public function horarios()

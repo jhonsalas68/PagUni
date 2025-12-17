@@ -6,6 +6,7 @@
 // Variables globales
 let deferredPrompt;
 let isStandalone = false;
+let vapidPublicKey = null;
 
 // Detectar si está en modo standalone (instalado)
 if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
@@ -18,7 +19,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
     console.log('PWA: beforeinstallprompt event fired');
     e.preventDefault();
     deferredPrompt = e;
-    
+
     // Mostrar botón de instalación si existe
     const installButton = document.getElementById('pwa-install-btn');
     if (installButton) {
@@ -33,17 +34,17 @@ async function installPWA() {
         console.log('PWA: No hay prompt disponible');
         return;
     }
-    
+
     // Mostrar prompt de instalación
     deferredPrompt.prompt();
-    
+
     // Esperar respuesta del usuario
     const { outcome } = await deferredPrompt.userChoice;
     console.log(`PWA: Usuario ${outcome === 'accepted' ? 'aceptó' : 'rechazó'} la instalación`);
-    
+
     // Limpiar prompt
     deferredPrompt = null;
-    
+
     // Ocultar botón
     const installButton = document.getElementById('pwa-install-btn');
     if (installButton) {
@@ -55,7 +56,7 @@ async function installPWA() {
 window.addEventListener('appinstalled', () => {
     console.log('PWA: Aplicación instalada exitosamente');
     deferredPrompt = null;
-    
+
     // Mostrar mensaje de éxito
     showNotification('¡Aplicación instalada!', 'success');
 });
@@ -91,7 +92,7 @@ function showNotification(message, type = 'info') {
         `;
         document.body.appendChild(container);
     }
-    
+
     // Crear notificación
     const notification = document.createElement('div');
     notification.className = `alert alert-${type} alert-dismissible fade show`;
@@ -103,9 +104,9 @@ function showNotification(message, type = 'info') {
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    
+
     container.appendChild(notification);
-    
+
     // Auto-remover después de 5 segundos
     setTimeout(() => {
         notification.classList.remove('show');
@@ -115,10 +116,209 @@ function showNotification(message, type = 'info') {
 
 // Manejar actualizaciones del Service Worker
 if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(async (registration) => {
+        // Verificar suscripción push al cargar
+        if ('PushManager' in window && registration.pushManager) {
+            // Intentar obtener la clave pública si no la tenemos
+            try {
+                const response = await fetch('/push/vapid-public-key');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.publicKey) {
+                        vapidPublicKey = data.publicKey;
+                        initializePushSubscription(registration);
+                    }
+                }
+            } catch (e) {
+                console.error('PWA: Error obteniendo VAPID key', e);
+            }
+        }
+    });
+
     navigator.serviceWorker.addEventListener('controllerchange', () => {
         console.log('PWA: Nueva versión disponible');
         showUpdateNotification();
     });
+}
+
+// Inicializar suscripción push
+async function initializePushSubscription(registration) {
+    try {
+        const subscription = await registration.pushManager.getSubscription();
+        const subscribeBtn = document.getElementById('pwa-subscribe-btn');
+
+        if (subscription) {
+            console.log('PWA: Usuario ya suscrito');
+            if (subscribeBtn) {
+                subscribeBtn.textContent = 'Desactivar Notificaciones';
+                subscribeBtn.classList.remove('btn-primary');
+                subscribeBtn.classList.add('btn-danger');
+                subscribeBtn.onclick = () => unsubscribeUser(registration);
+            }
+            // Actualizar suscripción en backend por si cambió usuario o algo
+            updateSubscriptionOnServer(subscription);
+        } else {
+            console.log('PWA: Usuario no suscrito');
+            if (subscribeBtn) {
+                subscribeBtn.textContent = 'Activar Notificaciones';
+                subscribeBtn.classList.add('btn-primary');
+                subscribeBtn.classList.remove('btn-danger');
+                subscribeBtn.onclick = () => subscribeUser(registration);
+            } else {
+                // Si no hay botón, podriamos sugerir suscripción si es apropiado
+                // showSubscribePrompt(registration); 
+            }
+        }
+
+        // Configurar botón de prueba
+        const testBtn = document.getElementById('pwa-test-btn');
+        if (testBtn) {
+            testBtn.addEventListener('click', sendTestNotification);
+        }
+    } catch (e) {
+        console.error('PWA: Error verificando suscripción', e);
+    }
+}
+
+// Suscribir usuario
+async function subscribeUser(registration) {
+    if (!vapidPublicKey) {
+        showNotification('Error de configuración: Falta VAPID Key', 'danger');
+        return;
+    }
+
+    try {
+        const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedVapidKey
+        });
+
+        console.log('PWA: Suscrito exitosamente', subscription);
+
+        const success = await updateSubscriptionOnServer(subscription);
+        if (success) {
+            showNotification('¡Notificaciones activadas!', 'success');
+            // Recargar para actualizar UI
+            window.location.reload();
+        } else {
+            // Si falló el backend, des-suscribir
+            subscription.unsubscribe();
+            showNotification('Error guardando suscripción en servidor', 'danger');
+        }
+    } catch (e) {
+        if (Notification.permission === 'denied') {
+            showNotification('Permiso de notificaciones denegado', 'warning');
+        } else {
+            console.error('PWA: Error suscribiendo', e);
+            showNotification('Error activando notificaciones', 'danger');
+        }
+    }
+}
+
+// Des-suscribir usuario
+async function unsubscribeUser(registration) {
+    try {
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+            // Eliminar de servidor primero
+            await deleteSubscriptionFromServer(subscription);
+
+            // Eliminar de navegador
+            await subscription.unsubscribe();
+            console.log('PWA: Des-suscrito exitosamente');
+            showNotification('Notificaciones desactivadas', 'info');
+            // Recargar para actualizar UI
+            window.location.reload();
+        }
+    } catch (e) {
+        console.error('PWA: Error des-suscribiendo', e);
+        showNotification('Error desactivando notificaciones', 'danger');
+    }
+}
+
+// Enviar suscripción al servidor
+async function updateSubscriptionOnServer(subscription) {
+    try {
+        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const response = await fetch('/push/subscribe', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': token
+            },
+            body: JSON.stringify(subscription)
+        });
+
+        if (!response.ok) {
+            throw new Error('Bad status code from server.');
+        }
+        return true;
+    } catch (e) {
+        console.error('PWA: Error enviando suscripción al servidor', e);
+        return false;
+    }
+}
+
+// Eliminar suscripción del servidor
+async function deleteSubscriptionFromServer(subscription) {
+    try {
+        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const response = await fetch('/push/unsubscribe', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': token
+            },
+            body: JSON.stringify({ endpoint: subscription.endpoint })
+        });
+
+        return response.ok;
+    } catch (e) {
+        console.error('PWA: Error eliminando suscripción del servidor', e);
+        return false;
+    }
+}
+
+// Enviar notificación de prueba
+async function sendTestNotification() {
+    try {
+        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const response = await fetch('/push/test', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': token
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showNotification('Notificación enviada. Deberías recibirla en breve.', 'success');
+        } else {
+            showNotification(data.error || 'Error al enviar notificación', 'danger');
+        }
+    } catch (e) {
+        console.error('PWA: Error enviando notificación de prueba', e);
+        showNotification('Error de conexión', 'danger');
+    }
+}
+
+// Utilidad para convertir VAPID Key
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
 }
 
 // Mostrar notificación de actualización
@@ -141,7 +341,7 @@ function showUpdateNotification() {
             Actualizar ahora
         </button>
     `;
-    
+
     document.body.appendChild(notification);
 }
 
@@ -159,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
         script.src = 'https://cdnjs.cloudflare.com/ajax/libs/lazysizes/5.3.2/lazysizes.min.js';
         document.body.appendChild(script);
     }
-    
+
     // Prevenir zoom en inputs en iOS
     if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
         const inputs = document.querySelectorAll('input, select, textarea');
@@ -169,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
+
     // Mejorar scroll en iOS
     if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
         document.body.style.webkitOverflowScrolling = 'touch';
@@ -239,7 +439,4 @@ style.textContent = `
 document.head.appendChild(style);
 
 // Log de información PWA
-console.log('PWA Handler inicializado');
-console.log('Modo standalone:', isStandalone);
-console.log('Service Worker soportado:', 'serviceWorker' in navigator);
-console.log('Notificaciones soportadas:', 'Notification' in window);
+console.log('PWA Handler inicializado con soporte Push');

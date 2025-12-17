@@ -9,6 +9,9 @@ use App\Models\CargaAcademica;
 use App\Models\Profesor;
 use App\Models\Materia;
 use App\Models\Aula;
+use App\Models\Grupo;
+use App\Models\Inscripcion;
+use App\Models\Calificacion;
 use Carbon\Carbon;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -475,5 +478,225 @@ class ReporteController extends Controller
         $filename = 'bitacora_' . Carbon::now()->format('Y-m-d_H-i-s') . '.xlsx';
 
         return Excel::download(new \App\Exports\BitacoraExport($filtros, $estadisticas), $filename);
+    }
+
+    /**
+     * Reporte de Rendimiento Académico (Aprobados/Reprobados)
+     */
+    public function reporteRendimiento(Request $request)
+    {
+        try {
+            $materias = Materia::where('estado', 'activo')->orderBy('nombre')->get();
+            $profesores = Profesor::where('estado', 'activo')->orderBy('nombre')->get();
+            
+            $materiaId = $request->input('materia_id');
+            $grupoId = $request->input('grupo_id');
+            $profesorId = $request->input('profesor_id');
+            
+            $estudiantes = [];
+            $estadisticas = [
+                'total' => 0,
+                'aprobados' => 0,
+                'reprobados' => 0,
+                'promedio_general' => 0
+            ];
+            
+            // Cargar grupos dependientes de la materia si se selecciona
+            $grupos = collect([]);
+            if ($materiaId) {
+                $grupos = Grupo::where('materia_id', $materiaId)
+                    ->where('estado', 'activo')
+                    ->with(['cargaAcademica.profesor'])
+                    ->get();
+            }
+
+            if ($grupoId) {
+                $grupoResult = Grupo::with(['inscripciones' => function($query) {
+                    $query->where('estado', 'activo')->with(['estudiante', 'calificaciones.tipoEvaluacion']);
+                }])->find($grupoId);
+                    
+                if ($grupoResult && $grupoResult->inscripciones) {
+                    $totalNotas = 0;
+                    
+                    foreach ($grupoResult->inscripciones as $inscripcion) {
+                        if (!$inscripcion->estudiante) continue;
+                        
+                        $notaFinal = 0;
+                        $acumulado = 0;
+                        
+                        if ($inscripcion->calificaciones && $inscripcion->calificaciones->count() > 0) {
+                            foreach ($inscripcion->calificaciones as $cal) {
+                                if (!$cal->tipoEvaluacion) continue;
+                                
+                                $ponderacion = $cal->tipoEvaluacion->ponderacion ?? 0;
+                                $nota = $cal->nota ?? 0;
+                                
+                                $puntos = ($nota / 100) * $ponderacion;
+                                $acumulado += $puntos;
+                            }
+                        }
+                        
+                        // Resultado final escala 0-100
+                        $notaFinal = round($acumulado, 2);
+                        $estado = $notaFinal >= 51 ? 'Aprobado' : 'Reprobado';
+                        
+                        $estudiantes[] = [
+                            'nombres' => $inscripcion->estudiante->nombre . ' ' . $inscripcion->estudiante->apellido,
+                            'codigo' => $inscripcion->estudiante->codigo_estudiante,
+                            'nota_final' => $notaFinal,
+                            'estado' => $estado
+                        ];
+                        
+                        if ($estado === 'Aprobado') $estadisticas['aprobados']++;
+                        else $estadisticas['reprobados']++;
+                        
+                        $totalNotas += $notaFinal;
+                    }
+                    
+                    $estadisticas['total'] = count($estudiantes);
+                    if ($estadisticas['total'] > 0) {
+                        $estadisticas['promedio_general'] = round($totalNotas / $estadisticas['total'], 2);
+                    }
+                }
+            }
+            
+            return view('reportes.rendimiento', compact('materias', 'profesores', 'grupos', 'estudiantes', 'estadisticas', 'materiaId', 'grupoId'));
+            
+        } catch (\Exception $e) {
+            // Log del error para debugging
+            \Log::error('Error en reporte de rendimiento: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Retornar vista con datos vacíos en caso de error
+            return view('reportes.rendimiento', [
+                'materias' => Materia::orderBy('nombre')->get(),
+                'profesores' => Profesor::orderBy('nombre')->get(),
+                'grupos' => collect([]),
+                'estudiantes' => [],
+                'estadisticas' => [
+                    'total' => 0,
+                    'aprobados' => 0,
+                    'reprobados' => 0,
+                    'promedio_general' => 0
+                ],
+                'materiaId' => null,
+                'grupoId' => null,
+                'error' => 'Ocurrió un error al generar el reporte. Revise los logs para más detalles.'
+            ]);
+        }
+    }
+
+    /**
+     * Generar reporte de rendimiento en PDF
+     */
+    public function reporteRendimientoPDF(Request $request)
+    {
+        try {
+            $materiaId = $request->input('materia_id');
+            $grupoId = $request->input('grupo_id');
+            
+            $estudiantes = [];
+            $estadisticas = [
+                'total' => 0,
+                'aprobados' => 0,
+                'reprobados' => 0,
+                'promedio_general' => 0
+            ];
+            
+            $materia = null;
+            $grupo = null;
+            
+            if ($grupoId) {
+                $grupoResult = Grupo::with(['materia', 'inscripciones' => function($query) {
+                    $query->where('estado', 'activo')->with(['estudiante', 'calificaciones.tipoEvaluacion']);
+                }])->find($grupoId);
+                    
+                if ($grupoResult && $grupoResult->inscripciones) {
+                    $materia = $grupoResult->materia;
+                    $grupo = $grupoResult;
+                    $totalNotas = 0;
+                    
+                    foreach ($grupoResult->inscripciones as $inscripcion) {
+                        if (!$inscripcion->estudiante) continue;
+                        
+                        $notaFinal = 0;
+                        $acumulado = 0;
+                        
+                        if ($inscripcion->calificaciones && $inscripcion->calificaciones->count() > 0) {
+                            foreach ($inscripcion->calificaciones as $cal) {
+                                if (!$cal->tipoEvaluacion) continue;
+                                
+                                $ponderacion = $cal->tipoEvaluacion->ponderacion ?? 0;
+                                $nota = $cal->nota ?? 0;
+                                
+                                $puntos = ($nota / 100) * $ponderacion;
+                                $acumulado += $puntos;
+                            }
+                        }
+                        
+                        $notaFinal = round($acumulado, 2);
+                        $estado = $notaFinal >= 51 ? 'Aprobado' : 'Reprobado';
+                        
+                        $estudiantes[] = [
+                            'nombres' => $inscripcion->estudiante->nombre . ' ' . $inscripcion->estudiante->apellido,
+                            'codigo' => $inscripcion->estudiante->codigo_estudiante,
+                            'nota_final' => $notaFinal,
+                            'estado' => $estado
+                        ];
+                        
+                        if ($estado === 'Aprobado') $estadisticas['aprobados']++;
+                        else $estadisticas['reprobados']++;
+                        
+                        $totalNotas += $notaFinal;
+                    }
+                    
+                    $estadisticas['total'] = count($estudiantes);
+                    if ($estadisticas['total'] > 0) {
+                        $estadisticas['promedio_general'] = round($totalNotas / $estadisticas['total'], 2);
+                    }
+                }
+            }
+            
+            $html = view('reportes.pdf.rendimiento', compact('estudiantes', 'estadisticas', 'materia', 'grupo'))->render();
+
+            $options = new Options();
+            $options->set('defaultFont', 'Arial');
+            $options->set('isRemoteEnabled', true);
+
+            $dompdf = new Dompdf($options);
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+
+            $filename = 'rendimiento_academico_' . Carbon::now()->format('Y-m-d_H-i-s') . '.pdf';
+            
+            return response($dompdf->output(), 200)
+                ->header('Content-Type', 'application/pdf')
+                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+                
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error al generar el PDF: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Generar reporte de rendimiento en Excel
+     */
+    public function reporteRendimientoExcel(Request $request)
+    {
+        try {
+            $materiaId = $request->input('materia_id');
+            $grupoId = $request->input('grupo_id');
+            
+            $filename = 'rendimiento_academico_' . Carbon::now()->format('Y-m-d_H-i-s') . '.xlsx';
+
+            return Excel::download(new \App\Exports\RendimientoExport($materiaId, $grupoId), $filename);
+            
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error al generar el Excel: ' . $e->getMessage());
+        }
     }
 }

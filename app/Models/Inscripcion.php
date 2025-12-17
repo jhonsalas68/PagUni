@@ -43,6 +43,11 @@ class Inscripcion extends Model
         return $this->hasMany(AsistenciaEstudiante::class);
     }
 
+    public function calificaciones(): HasMany
+    {
+        return $this->hasMany(Calificacion::class);
+    }
+
     // Métodos de negocio
     public function calcularPorcentajeAsistencia(): float
     {

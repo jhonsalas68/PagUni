@@ -8,6 +8,8 @@ use App\Models\Profesor;
 use App\Models\Grupo;
 use App\Models\Carrera;
 use App\Models\Facultad;
+use App\Models\PeriodoAcademico;
+use App\Services\GeneradorCargaService;
 use Illuminate\Http\Request;
 
 class CargaAcademicaController extends Controller
@@ -155,5 +157,41 @@ $cargaAcademica->delete();
 
         return redirect()->route('admin.cargas-academicas.index')
             ->with('success', 'Carga académica eliminada exitosamente.');
+    }
+
+    public function vistaGenerador()
+    {
+        $periodos = PeriodoAcademico::orderBy('anio', 'desc')
+            ->orderBy('semestre', 'desc')
+            ->pluck('codigo');
+
+        return view('admin.cargas-academicas.generar', compact('periodos'));
+    }
+
+    public function generarAutomatico(Request $request, GeneradorCargaService $generador)
+    {
+        $request->validate([
+            'periodo' => 'required|string',
+        ]);
+
+        try {
+            $resultado = $generador->generar($request->periodo);
+
+            $mensaje = "Proceso finalizado. Materias procesadas: {$resultado['procesados']}. Cargas asignadas: {$resultado['asignados']}.";
+            
+            if (!empty($resultado['conflictos'])) {
+                return redirect()->route('admin.cargas-academicas.generador')
+                    ->with('warning', $mensaje)
+                    ->with('conflictos', $resultado['conflictos'])
+                    ->with('asignaciones', $resultado['asignaciones']);
+            }
+
+            return redirect()->route('admin.cargas-academicas.generador')
+                ->with('success', $mensaje)
+                ->with('asignaciones', $resultado['asignaciones']);
+                
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error inesperado: ' . $e->getMessage());
+        }
     }
 }

@@ -96,6 +96,31 @@
             </div>
         </div>
 
+        <!-- Reporte Rendimiento Académico -->
+        <div class="col-lg-6 col-xl-4 mb-4">
+            <div class="card border-left-danger shadow h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Rendimiento Académico
+                            </div>
+                            <div class="h6 mb-2 font-weight-bold text-gray-800">Aprobados y Reprobados</div>
+                            <div class="mb-3">
+                                <small class="text-muted">Análisis de notas finales y estado de aprobación</small>
+                            </div>
+                            <a href="{{ route('reportes.rendimiento') }}" class="btn btn-danger btn-sm">
+                                <i class="fas fa-chart-pie"></i> Ver Reporte
+                            </a>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-pie fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         @if(session('user_type') === 'administrador')
         <!-- Bitácora de Acceso -->
         <div class="col-lg-6 col-xl-4 mb-4">

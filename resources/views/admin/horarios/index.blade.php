@@ -98,7 +98,18 @@
                                     ];
                                     
                                     $diasTexto = [];
-                                    foreach($horario->dias_semana as $dia) {
+                                    
+                                    // Handle both array and string cases safely
+                                    $diasSemana = $horario->dias_semana;
+                                    if (is_string($diasSemana)) {
+                                        // If it's a string, try to decode as JSON first
+                                        $decoded = json_decode($diasSemana, true);
+                                        $diasSemana = is_array($decoded) ? $decoded : [$diasSemana];
+                                    } elseif (!is_array($diasSemana)) {
+                                        $diasSemana = [];
+                                    }
+                                    
+                                    foreach($diasSemana as $dia) {
                                         $diasTexto[] = $diasMap[$dia] ?? ucfirst(substr($dia, 0, 2));
                                     }
                                     $diasStr = implode(' ', $diasTexto);

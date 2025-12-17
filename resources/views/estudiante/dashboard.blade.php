@@ -77,6 +77,11 @@
                                 📊 Ver Historial
                             </a>
                         </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ route('chat.index') }}" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-comments"></i> Chat
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

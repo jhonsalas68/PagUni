@@ -169,7 +169,7 @@ $validationRules = [
 
         // Si no hay conflictos, crear el horario con múltiples días
         if (!$hayConflictos) {
-            Horario::create([
+            $nuevoHorario = Horario::create([
                 'carga_academica_id' => $request->carga_academica_id,
                 'aula_id' => $request->aula_id,
                 'dias_semana' => $diasSemana, // Array de nombres de días
@@ -186,6 +186,14 @@ $validationRules = [
                 'usar_configuracion_por_dia' => $usarConfiguracionPorDia,
             ]);
             $horariosCreados = 1;
+
+            // Trigger Push Notification
+            try {
+                $pushService = new \App\Services\PushNotificationService();
+                $pushService->notifyNewClass($nuevoHorario);
+            } catch (\Exception $e) {
+                \Log::error('Error sending push notification: ' . $e->getMessage());
+            }
         }
 
         // Preparar mensaje de respuesta
